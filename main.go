@@ -1,10 +1,13 @@
 package main
 
-// #cgo CFLAGS: -Igdal
-// #cgo LDFLAGS: -lgdal
-// #include <gdal.h>
-import "C"
+import (
+	"fmt"
+)
 
 func main() {
-	C.GDALAllRegister()
+	err, buf := ReadGDAL("dem-files/6603_1_10m_z32.dem")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(buf.buffer[0:10])
 }
