@@ -1,6 +1,6 @@
-package main
+package elevationmap
 
-// #cgo CFLAGS: -Igdal
+// #cgo CFLAGS: -I../gdal
 // #cgo LDFLAGS: -lgdal
 // #include <gdal.h>
 // #include <stdlib.h>
@@ -20,7 +20,7 @@ func init() {
 	C.GDALAllRegister()
 }
 
-func ReadGDAL(fname string) (error, gdalbuffer) {
+func readGDAL(fname string) (error, gdalbuffer) {
 	cstr := C.CString(fname)
 	defer C.free(unsafe.Pointer(cstr))
 	ds := C.GDALOpen(cstr, C.GA_ReadOnly)
