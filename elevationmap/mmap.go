@@ -30,18 +30,25 @@ func (m *Mmapstruct) Close() error {
 }
 
 func toMmapStruct(buf gdalbuffer) *Mmapstruct {
+	// Input files are not aligned to the same global 10x10 matrix.
+	// Offsets below are 205 for most files, but 210 and 215 for some
+	eastingOffset := 1000 - int(buf.eastingMin) % 1000
+	northingOffset := int(buf.northingMax) % 1000
 	result := Mmapstruct{
-		EastingMin: buf.eastingMin,
-		NorthingMax: buf.northingMax,
+		EastingMin: buf.eastingMin + float64(eastingOffset),
+		NorthingMax: buf.northingMax - float64(northingOffset),
 	}
+	colOffset := eastingOffset / 10
+	rowOffset := northingOffset / 10
+
 	for i := 0; i < 200; i++ {
 		for j := 0; j < 200; j++ {
 			for m := 0; m < 25; m++ {
-				row := 20 + i * 25 + m
+				row := rowOffset + i * 25 + m
 				for n := 0; n < 25; n++ {
-					col := 20 + j * 25 + n
+					col := colOffset + j * 25 + n
 
-					floatval := buf.buffer[row * 5041 + col]
+					floatval := buf.buffer[row * buf.xsize + col]
 					intval := int16(math.Round(10 * float64(floatval)))
 
 					result.Elevations[i][j][m][n] = intval
@@ -81,8 +88,8 @@ func writeMmapped(fname string, mmapFname string) error {
 	if err != nil {
 		return err
 	}
-	if len(buf.buffer) != 5041 * 5041 {
-		return fmt.Errorf("unexpected dem file buffer size %d", len(buf.buffer))
+	if buf.xsize < 5040 || buf.xsize > 5050 || buf.ysize < 5040 || buf.ysize > 5050 {
+		return fmt.Errorf("unexpected dem file buffer size %d x %d", buf.xsize, buf.ysize)
 	}
 	mmapdata := toMmapStruct(buf)
 

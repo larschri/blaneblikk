@@ -13,6 +13,8 @@ import (
 type gdalbuffer struct {
 	eastingMin float64
 	northingMax float64
+	xsize int
+	ysize int
 	buffer []float32
 }
 
@@ -47,6 +49,8 @@ func readGDAL(fname string) (error, gdalbuffer) {
 	return nil, gdalbuffer{
 		eastingMin:  gdalTransformArray[0],
 		northingMax: gdalTransformArray[3],
+		xsize:       int(xsize),
+		ysize:       int(ysize),
 		buffer:      buf,
 	}
 }
