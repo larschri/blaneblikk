@@ -18,5 +18,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Print(elevmap)
+	north := 6833872.61
+	east := 463561.54
+	fmt.Println(float64(elevmap.GetElevation(east, north)))
 }
