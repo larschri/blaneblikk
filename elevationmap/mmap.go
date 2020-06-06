@@ -43,15 +43,20 @@ func toMmapStruct(buf gdalbuffer) *Mmapstruct {
 
 	for i := 0; i < 200; i++ {
 		for j := 0; j < 200; j++ {
-			for m := 0; m < 25; m++ {
+			// The loops below includes the 25th element to compute MaxElevations.
+			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
+			for m := 0; m <= 25; m++ {
 				row := rowOffset + i * 25 + m
-				for n := 0; n < 25; n++ {
+				for n := 0; n <= 25; n++ {
 					col := colOffset + j * 25 + n
 
 					floatval := buf.buffer[row * buf.xsize + col]
 					intval := int16(math.Round(10 * float64(floatval)))
 
-					result.Elevations[i][j][m][n] = intval
+					if m < 25 && n < 25 {
+						result.Elevations[i][j][m][n] = intval
+					}
+
 					if intval > result.MaxElevations[i][j] {
 						result.MaxElevations[i][j] = intval
 					}
