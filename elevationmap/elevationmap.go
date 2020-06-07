@@ -30,7 +30,7 @@ func (em ElevationMap) lookup(e indices, n indices) int16 {
 		return -1
 	}
 
-	ms := em.mmapStructs[n.i3][e.i3]
+	ms := em.mmapStructs[e.i3][n.i3]
 	if ms == nil {
 		return -1
 	}
@@ -61,10 +61,10 @@ func (em ElevationMap) GetElevation(easting float64, northing float64) float64 {
 	er := easting2 - float64(erest)
 	nr := northing2 - float64(nrest)
 
-	return float64(l00) * er * nr +
+	return (float64(l00) * er * nr +
 		float64(l01) * er * (1 - nr) +
 		float64(l10) * (1 - er) * nr +
-		float64(l11) * (1 - er) * (1 - nr)
+		float64(l11) * (1 - er) * (1 - nr)) / 10
 }
 
 func LoadFiles(fNames []string) (ElevationMap, error) {
