@@ -61,10 +61,10 @@ func (em ElevationMap) GetElevation(easting float64, northing float64) float64 {
 	er := easting2 - float64(erest)
 	nr := northing2 - float64(nrest)
 
-	return (float64(l00) * er * nr +
-		float64(l01) * er * (1 - nr) +
-		float64(l10) * (1 - er) * nr +
-		float64(l11) * (1 - er) * (1 - nr)) / 10
+	return (float64(l10) * er * nr +
+		float64(l11) * er * (1 - nr) +
+		float64(l00) * (1 - er) * nr +
+		float64(l01) * (1 - er) * (1 - nr)) / 10
 }
 
 func LoadFiles(fNames []string) (ElevationMap, error) {
