@@ -44,6 +44,10 @@ func (em ElevationMap) GetElevation(easting float64, northing float64) float64 {
 	erest := int(math.Floor(easting2))
 	nrest := int(math.Floor(northing2))
 
+	if erest < 0 || nrest < 0 {
+		return -1
+	}
+
 	n0 := arrayIndices(nrest)
 	e0 := arrayIndices(erest)
 	n1 := arrayIndices(nrest + 1)
