@@ -63,9 +63,9 @@ func createView(view args, elevMap elevationmap.ElevationMap) {
 		for dist := view.step; dist < 200000; dist = dist + view.step {
 			elevation := elevMap.GetElevation(view.easting + sin * dist, view.northing + cos * dist)
 			heightAngle := math.Atan2(elevation - elevation0, dist) - math.Atan2(dist / 2, 6371000.0)
-			newBoffIdx := int(float64(geopixelLen) * (heightAngle - view.minHeight) / view.heightAngle)
+			geopixelIdx := int(float64(geopixelLen) * (heightAngle - view.minHeight) / view.heightAngle)
 
-			for len(geopixels) <= newBoffIdx {
+			for len(geopixels) <= geopixelIdx {
 				geopixels = append(geopixels, geopixel{
 					distance: dist,
 					incline:  (elevation - prevElevation),
