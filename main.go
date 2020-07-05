@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/larschri/gdal002/elevationmap"
+	"github.com/larschri/blaner/elevationmap"
 	"image"
 	"image/png"
 	"math"
