@@ -44,6 +44,27 @@ func (b geopixel) getRGB() rgb {
 	return green.add(blue.scale(b.distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
 
+func traceDirection(rad float64, elevation0 float64, geopixelLen int, elevMap elevationmap.ElevationMap, view args) []geopixel{
+	geopixels := make([]geopixel, 0)
+	sin := math.Sin(rad)
+	cos := math.Cos(rad)
+	prevElevation := elevation0
+	for dist := view.step; dist < 200000; dist = dist + view.step {
+		elevation := elevMap.GetElevation(view.easting + sin * dist, view.northing + cos * dist)
+		heightAngle := math.Atan2(elevation - elevation0, dist) - math.Atan2(dist / 2, 6371000.0)
+		geopixelIdx := int(float64(geopixelLen) * (heightAngle - view.minHeight) / view.heightAngle)
+
+		for len(geopixels) <= geopixelIdx {
+			geopixels = append(geopixels, geopixel{
+				distance: dist,
+				incline:  (elevation - prevElevation),
+			})
+		}
+		prevElevation = elevation
+	}
+	return geopixels
+}
+
 func createView(view args, elevMap elevationmap.ElevationMap) {
 	subPixels := 3
 	geopixelLen := int(view.heightAngle * float64(view.columns) / view.width) * subPixels
@@ -55,24 +76,8 @@ func createView(view args, elevMap elevationmap.ElevationMap) {
 	})
 
 	for i := 0; i < view.columns; i++ {
-		geopixels := make([]geopixel, 0)
 		rad := view.start + (float64(view.columns - i) * view.width / float64(view.columns))
-		sin := math.Sin(rad)
-		cos := math.Cos(rad)
-		prevElevation := elevation0
-		for dist := view.step; dist < 200000; dist = dist + view.step {
-			elevation := elevMap.GetElevation(view.easting + sin * dist, view.northing + cos * dist)
-			heightAngle := math.Atan2(elevation - elevation0, dist) - math.Atan2(dist / 2, 6371000.0)
-			geopixelIdx := int(float64(geopixelLen) * (heightAngle - view.minHeight) / view.heightAngle)
-
-			for len(geopixels) <= geopixelIdx {
-				geopixels = append(geopixels, geopixel{
-					distance: dist,
-					incline:  (elevation - prevElevation),
-				})
-			}
-			prevElevation = elevation
-		}
+		geopixels := traceDirection(rad, elevation0, geopixelLen, elevMap, view)
 
 		len := len(geopixels)
 		if len > geopixelLen {
