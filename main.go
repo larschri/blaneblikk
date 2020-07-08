@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/larschri/blaner/elevationmap"
+	"github.com/larschri/blaner/transform"
 	"image"
 	"image/png"
 	"math"
@@ -34,35 +35,9 @@ var args1 = args{
 	minHeight:   -.08,
 }
 
-type geopixel struct {
-	distance float64
-	incline float64
-}
-
-func (b geopixel) getRGB() rgb {
-	incline := math.Max(0, math.Min(1, b.incline / 20))
-	return green.add(blue.scale(b.distance / 10000)).normalize().add(black.scale(incline)).normalize()
-}
-
-func traceDirection(rad float64, elevation0 float64, geopixelLen int, elevMap elevationmap.ElevationMap, view args) []geopixel{
-	geopixels := make([]geopixel, 0)
-	sin := math.Sin(rad)
-	cos := math.Cos(rad)
-	prevElevation := elevation0
-	for dist := view.step; dist < 200000; dist = dist + view.step {
-		elevation := elevMap.GetElevation(view.easting + sin * dist, view.northing + cos * dist)
-		heightAngle := math.Atan2(elevation - elevation0, dist) - math.Atan2(dist / 2, 6371000.0)
-		geopixelIdx := int(float64(geopixelLen) * (heightAngle - view.minHeight) / view.heightAngle)
-
-		for len(geopixels) <= geopixelIdx {
-			geopixels = append(geopixels, geopixel{
-				distance: dist,
-				incline:  (elevation - prevElevation),
-			})
-		}
-		prevElevation = elevation
-	}
-	return geopixels
+func getRGB(b transform.Geopixel) rgb {
+	incline := math.Max(0, math.Min(1, b.Incline / 20))
+	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
 
 func createView(view args, elevMap elevationmap.ElevationMap) {
@@ -75,20 +50,27 @@ func createView(view args, elevMap elevationmap.ElevationMap) {
 		image.Point{view.columns, geopixelLen / subPixels},
 	})
 
+	trans := transform.Transform{
+		Easting:  view.easting,
+		Northing: view.northing,
+		ElevMap: elevMap,
+		GeopixelLen: geopixelLen,
+	}
+
 	for i := 0; i < view.columns; i++ {
 		rad := view.start + (float64(view.columns - i) * view.width / float64(view.columns))
-		geopixels := traceDirection(rad, elevation0, geopixelLen, elevMap, view)
+		geopixels := trans.TraceDirection(rad, elevation0)
 
 		len := len(geopixels)
 		if len > geopixelLen {
 			len = geopixelLen
 		}
 		for j := 0; j < len; j+=subPixels {
-			c := geopixels[j].getRGB()
+			c := getRGB(geopixels[j])
 			alpha := 255 / subPixels
 			for k := 1; k < subPixels; k++ {
 				if j + k < len {
-					c = c.add(geopixels[j+k].getRGB())
+					c = c.add(getRGB(geopixels[j+k]))
 					alpha += 255 / subPixels
 				}
 			}
