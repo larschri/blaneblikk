@@ -31,10 +31,7 @@ func (transform Transform) TraceDirection(rad float64, elevation0 float64) []Geo
 		earthCurvatureAngle := math.Atan2(dist / 2, 6371000.0)
 		elevationLimit := elevation0 + dist * math.Tan(currHeightAngle + earthCurvatureAngle)
 		elevation := transform.ElevMap.GetElevation(transform.Easting + sin * dist, transform.Northing + cos * dist, elevationLimit)
-		if elevation < elevationLimit {
-			if elevation == -1 {
-				dist = dist + 3*step
-			}
+		if elevation == -1 {
 			continue
 		}
 		heightAngle := math.Atan2(elevation - elevation0, dist)
