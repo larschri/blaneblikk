@@ -43,7 +43,7 @@ func getRGB(b transform.Geopixel) rgb {
 func createView(view args, elevMap elevationmap.ElevationMap) {
 	subPixels := 3
 	geopixelLen := int(view.heightAngle * float64(view.columns) / view.width) * subPixels
-	elevation0 := elevMap.GetElevation(view.easting, view.northing) + 20
+	elevation0 := elevMap.GetElevation(view.easting, view.northing, 0) + 20
 
 	img := image.NewRGBA(image.Rectangle{
 		image.Point{0, 0},

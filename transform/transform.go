@@ -28,10 +28,18 @@ func (transform Transform) TraceDirection(rad float64, elevation0 float64) []Geo
 	prevElevation := elevation0
 	currHeightAngle := bottomHeightAngle
 	for dist := step; dist < 200000; dist = dist + step {
-		elevation := transform.ElevMap.GetElevation(transform.Easting + sin * dist, transform.Northing + cos * dist)
-		heightAngle := math.Atan2(elevation - elevation0, dist) - math.Atan2(dist / 2, 6371000.0)
+		earthCurvatureAngle := math.Atan2(dist / 2, 6371000.0)
+		elevationLimit := elevation0 + dist * math.Tan(currHeightAngle + earthCurvatureAngle)
+		elevation := transform.ElevMap.GetElevation(transform.Easting + sin * dist, transform.Northing + cos * dist, elevationLimit)
+		if elevation < elevationLimit {
+			if elevation == -1 {
+				dist = dist + 3*step
+			}
+			continue
+		}
+		heightAngle := math.Atan2(elevation - elevation0, dist)
 
-		for currHeightAngle <= heightAngle {
+		for currHeightAngle + earthCurvatureAngle <= heightAngle {
 			geopixels = append(geopixels, Geopixel{
 				Distance: dist,
 				Incline:  (elevation - prevElevation),
