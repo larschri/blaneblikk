@@ -67,10 +67,18 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	n1 := arrayIndices(nrest + 1)
 	e1 := arrayIndices(erest + 1)
 
-	l00 := em.lookup(e0, n0)
-	l01 := em.lookup(e0, n1)
-	l10 := em.lookup(e1, n0)
-	l11 := em.lookup(e1, n1)
+	// Optimisation, assume the same mmapStruct for all corners
+	l00 := mmapStruct.Elevations[n0.i2][e0.i2][n0.i1][e0.i1]
+	l01 := mmapStruct.Elevations[n1.i2][e0.i2][n1.i1][e0.i1]
+	l10 := mmapStruct.Elevations[n0.i2][e1.i2][n0.i1][e1.i1]
+	l11 := mmapStruct.Elevations[n1.i2][e1.i2][n1.i1][e1.i1]
+
+	if nrest / 5000 != (nrest + 1) / 5000 || erest / 5000 != (erest + 1) / 5000 {
+		l00 = em.lookup(e0, n0)
+		l01 = em.lookup(e0, n1)
+		l10 = em.lookup(e1, n0)
+		l11 = em.lookup(e1, n1)
+	}
 
 	if l00 == -1 || l01 == -1 || l10 == -1 || l11 == -1 {
 		return -1
