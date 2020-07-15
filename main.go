@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/png"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -40,7 +41,7 @@ func getRGB(b transform.Geopixel) rgb {
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
 
-func createView(view args, elevMap elevationmap.ElevationMap) {
+func createView(view args, elevMap elevationmap.ElevationMap) *image.RGBA {
 	subPixels := 3
 	geopixelLen := int(view.heightAngle * float64(view.columns) / view.width) * subPixels
 	elevation0 := elevMap.GetElevation(view.easting, view.northing, 0) + 20
@@ -79,23 +80,33 @@ func createView(view args, elevMap elevationmap.ElevationMap) {
 
 		fmt.Println("col", i)
 	}
-	f, _ := os.Create("foo.png")
-	png.Encode(f, img)
+	return img
 }
 
+var elevmap elevationmap.ElevationMap
+
+func blanerHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Add("Content-Type", "image/png")
+	png.Encode(w, createView(args1, elevmap))
+}
 
 func main() {
-	mapstruct, err := elevationmap.LoadAsMmap("dem-files/6603_1_10m_z32.dem")
-	fmt.Println(err)
-	fmt.Println(mapstruct.NorthingMax)
 	files, err := filepath.Glob("dem-files/[^.]*.dem")
 	if err != nil {
 		panic(err)
 	}
-	elevmap, err := elevationmap.LoadFiles(files)
+	elevmap, err = elevationmap.LoadFiles(files)
 	if err != nil {
 		panic(err)
 	}
 
-	createView(args1, elevmap)
+	if len(os.Args) < 2 {
+		http.HandleFunc("/blaner", blanerHandler)
+		http.Handle("/", http.FileServer(http.Dir("htdocs")))
+		http.ListenAndServe(":8090", nil)
+	} else {
+		img := createView(args1, elevmap)
+		f, _ := os.Create("foo.png")
+		png.Encode(f, img)
+	}
 }
