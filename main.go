@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type args struct {
@@ -87,7 +88,20 @@ var elevmap elevationmap.ElevationMap
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	png.Encode(w, createView(args1, elevmap))
+	easting, _ := strconv.ParseFloat(req.URL.Query().Get("easting"), 64)
+	northing, _ := strconv.ParseFloat(req.URL.Query().Get("northing"), 64)
+	start, _ := strconv.ParseFloat(req.URL.Query().Get("start"), 64)
+	xx := args{
+		start:    start,
+		width:    .1,
+		columns:  400,
+		step:     10,
+		easting:  easting,
+		northing: northing,
+		heightAngle: .16,
+		minHeight:   -.08,
+	}
+	png.Encode(w, createView(xx, elevmap))
 }
 
 func main() {
