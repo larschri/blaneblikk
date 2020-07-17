@@ -1,5 +1,59 @@
 <html>
-	<body>
-		<img src="blaner?easting=463561&northing=6833871&start=3.1">
-	</body>
+<head>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+	integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+	crossorigin=""/>
+
+ <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+   integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+   crossorigin=""></script>
+
+</head>
+<body>
+
+<div id="map" style="width:700px; height:500px;">
+</div>
+<button id="reset">Reset</button>
+<img id="blanerImg" />
+
+
+        <script>
+var map = L.map('map').setView([60.14, 10.25], 11);
+L.tileLayer('https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=topo4&zoom={z}&x={x}&y={y}', {
+	attribution: '<a href="http://www.kartverket.no/">Kartverket</a>'
+}).addTo(map);
+
+var marker = null;
+var marker2 = L.marker();
+
+function onMapClick(e) {
+	if (marker == null) {
+	    marker = L.marker();
+	    marker
+		.setLatLng(e.latlng)
+		.addTo(map);
+	} else {
+	    marker2
+		.setLatLng(e.latlng)
+		.addTo(map);
+		pos0 = marker.getLatLng();
+		pos1 = marker2.getLatLng();
+	    console.log(marker.getLatLng(), marker2.getLatLng());
+		document.querySelector("#blanerImg").src = `blaner?lat0=${pos0.lat}&lng0=${pos0.lng}&lat1=${pos1.lat}&lng1=${pos1.lng}`;
+	}
+}
+
+map.on('click', onMapClick);
+
+document.querySelector('#reset').addEventListener('click', event => {
+	if (marker != null) {
+		marker.remove();
+		marker = null;
+	}
+	marker2.remove();
+});
+        </script>
+
+</body>
 </html>
