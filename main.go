@@ -1,17 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/larschri/blaner/elevationmap"
 	"github.com/larschri/blaner/transform"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type args struct {
@@ -87,37 +86,18 @@ func createView(view args, elevMap elevationmap.ElevationMap) *image.RGBA {
 
 var elevmap elevationmap.ElevationMap
 
-func translate(lat string, lng string) (float64, float64) {
-	resp, err := http.Get("https://ws.geonorge.no/transApi?ost=" + lng + "&nord=" + lat + "&fra=84&til=22")
+func getFloatParam(req *http.Request, param string) float64 {
+	f, err := strconv.ParseFloat(req.URL.Query().Get(param), 64)
 	if err != nil {
 		panic(err)
 	}
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	var res map[string]interface{}
-	err = json.Unmarshal(b, &res)
-	if err != nil {
-		panic(err)
-	}
-	easting, ok := res["ost"].(float64)
-	if !ok {
-		panic(res["ost"])
-	}
-	northing, ok := res["nord"].(float64)
-	if !ok {
-		panic(res["nord"])
-	}
-
-	return easting, northing
+	return f
 }
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	query := req.URL.Query()
-	easting, northing := translate(query.Get("lat0"), query.Get("lng0"))
-	easting1, northing1 := translate(query.Get("lat1"), query.Get("lng1"))
+	easting, northing := Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
+	easting1, northing1 := Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting - easting1, northing1 - northing)
 	fmt.Println(angle)
 	xx := args{
