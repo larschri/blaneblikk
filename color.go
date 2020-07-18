@@ -41,10 +41,10 @@ var blue = rgb{
 	w: 1,
 }
 
-var black = rgb{ 0, 0, 0, 1, }
+var black = rgb{0, 0, 0, 1}
 
 func (c rgb) normalize() rgb {
-	return rgb {
+	return rgb{
 		c.r / c.w,
 		c.g / c.w,
 		c.b / c.w,

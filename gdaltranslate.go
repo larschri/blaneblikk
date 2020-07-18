@@ -19,7 +19,7 @@ func init() {
 func Translate(lat float64, lng float64) (float64, float64) {
 	xs := []float64{lng}
 	ys := []float64{lat}
-	zs:= []float64{1}
+	zs := []float64{1}
 	C.OCTTransform(trans, C.int(1), (*C.double)(&xs[0]), (*C.double)(&ys[0]), (*C.double)(&zs[0]))
 	return xs[0], ys[0]
 }
