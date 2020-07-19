@@ -7,7 +7,6 @@ package dtm10utm32
 import "C"
 import (
 	"errors"
-	"fmt"
 	"unsafe"
 )
 
@@ -35,7 +34,7 @@ func readGDAL(fname string) (error, gdalbuffer) {
 
 	wkt := C.GDALGetProjectionRef(ds)
 	if C.GoString(wkt) != UTM32WKT {
-		fmt.Println("Unexpected wkt: ", wkt)
+		panic("Unexpected wkt for " + fname + ":" + C.GoString(wkt))
 	}
 
 	var gdalTransformArray [6]float64
