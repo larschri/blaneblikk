@@ -7,6 +7,7 @@ package dtm10utm32
 import "C"
 import (
 	"errors"
+	"log"
 	"unsafe"
 )
 
@@ -15,9 +16,7 @@ const UTM32WKT = `PROJCS["UTM Zone 32, Northern Hemisphere",GEOGCS["WGS 84",DATU
 type gdalbuffer struct {
 	eastingMin float64
 	northingMax float64
-	xsize int
-	ysize int
-	buffer []float32
+	buffer [5001][]float32
 }
 
 func init() {
@@ -25,6 +24,7 @@ func init() {
 }
 
 func readGDAL(fname string) (error, gdalbuffer) {
+	log.Printf("reading %s", fname)
 	cstr := C.CString(fname)
 	defer C.free(unsafe.Pointer(cstr))
 	ds := C.GDALOpen(cstr, C.GA_ReadOnly)
@@ -47,17 +47,31 @@ func readGDAL(fname string) (error, gdalbuffer) {
 
 	xsize := C.GDALGetRasterXSize(ds)
 	ysize := C.GDALGetRasterYSize(ds)
+	if xsize < 5040 || xsize > 5050 || ysize < 5040 || ysize > 5050 {
+		log.Panicf("unexpected dem file buffer size %d x %d", xsize, ysize)
+		panic("")
+	}
+
 	buf := make([]float32, xsize * ysize)
 	band := C.GDALGetRasterBand(ds, 1)
 	if C.GDALRasterIO(band, C.GF_Read, 0, 0, xsize, ysize, unsafe.Pointer(&buf[0]), xsize, ysize, C.GDT_Float32, 0, 0) != C.CE_None {
 		return errors.New("failed to read elevation buffer from file"), gdalbuffer{}
 	}
 
-	return nil, gdalbuffer{
-		eastingMin:  gdalTransformArray[0],
-		northingMax: gdalTransformArray[3],
-		xsize:       int(xsize),
-		ysize:       int(ysize),
-		buffer:      buf,
+	// Input files are not aligned to the same global 10x10 matrix.
+	// Offsets below are 205 for most files, but 210 and 215 for some
+	eastingOffset := 1000 - int(gdalTransformArray[0]) % 1000
+	northingOffset := int(gdalTransformArray[3]) % 1000
+	colOffset := eastingOffset / 10
+	rowOffset := northingOffset / 10
+
+	result := gdalbuffer{
+		eastingMin : gdalTransformArray[0] + float64(eastingOffset),
+		northingMax : gdalTransformArray[3] - float64(northingOffset),
 	}
+	for i := 0; i < 5001; i++ {
+		offset := colOffset + (i + rowOffset) * int(xsize)
+		result.buffer[i] = buf[offset:offset+5001]
+	}
+	return nil, result
 }

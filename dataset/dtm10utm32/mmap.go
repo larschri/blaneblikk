@@ -1,7 +1,6 @@
 package dtm10utm32
 
 import (
-	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
@@ -30,27 +29,22 @@ func (m *Mmapstruct) Close() error {
 }
 
 func toMmapStruct(buf gdalbuffer) *Mmapstruct {
-	// Input files are not aligned to the same global 10x10 matrix.
-	// Offsets below are 205 for most files, but 210 and 215 for some
-	eastingOffset := 1000 - int(buf.eastingMin) % 1000
-	northingOffset := int(buf.northingMax) % 1000
+
 	result := Mmapstruct{
-		EastingMin: buf.eastingMin + float64(eastingOffset),
-		NorthingMax: buf.northingMax - float64(northingOffset),
+		EastingMin: buf.eastingMin,
+		NorthingMax: buf.northingMax,
 	}
-	colOffset := eastingOffset / 10
-	rowOffset := northingOffset / 10
 
 	for i := 0; i < 200; i++ {
 		for j := 0; j < 200; j++ {
 			// The loops below _includes_ the 25th element to compute MaxElevations.
 			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
 			for m := 0; m <= 25; m++ {
-				row := rowOffset + i * 25 + m
+				row := i * 25 + m
 				for n := 0; n <= 25; n++ {
-					col := colOffset + j * 25 + n
+					col := j * 25 + n
 
-					floatval := buf.buffer[row * buf.xsize + col]
+					floatval := buf.buffer[row][col]
 					intval := int16(math.Round(10 * float64(floatval)))
 
 					if m < 25 && n < 25 {
@@ -92,9 +86,6 @@ func writeMmapped(fname string, mmapFname string) error {
 	err, buf := readGDAL(fname)
 	if err != nil {
 		return err
-	}
-	if buf.xsize < 5040 || buf.xsize > 5050 || buf.ysize < 5040 || buf.ysize > 5050 {
-		return fmt.Errorf("unexpected dem file buffer size %d x %d", buf.xsize, buf.ysize)
 	}
 	mmapdata := toMmapStruct(buf)
 
