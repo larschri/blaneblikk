@@ -1,7 +1,7 @@
 package transform
 
 import (
-	"github.com/larschri/blaner/dataset/dtm10utm32"
+	"github.com/larschri/blaner/dataset"
 	"math"
 )
 
@@ -11,9 +11,9 @@ type Geopixel struct {
 }
 
 type Transform struct {
-	Easting float64
-	Northing float64
-	ElevMap dtm10utm32.ElevationMap
+	Easting     float64
+	Northing    float64
+	ElevMap     dataset.ElevationMap
 	GeopixelLen int
 }
 

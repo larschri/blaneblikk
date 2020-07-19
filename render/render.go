@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/larschri/blaner/dataset/dtm10utm32"
+	"github.com/larschri/blaner/dataset"
 	"github.com/larschri/blaner/transform"
 	"image"
 	"math"
@@ -23,7 +23,7 @@ func getRGB(b transform.Geopixel) rgb {
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
 
-func CreateImage(view Args, elevMap dtm10utm32.ElevationMap) *image.RGBA {
+func CreateImage(view Args, elevMap dataset.ElevationMap) *image.RGBA {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 	elevation0 := elevMap.GetElevation(view.Easting, view.Northing, 0) + 20

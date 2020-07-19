@@ -1,4 +1,4 @@
-package dtm10utm32
+package dataset
 
 import (
 	"fmt"

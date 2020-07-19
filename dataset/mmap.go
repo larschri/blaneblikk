@@ -1,4 +1,4 @@
-package dtm10utm32
+package dataset
 
 import (
 	"io/ioutil"
@@ -20,12 +20,6 @@ type Mmap5000 struct {
 	// An elevation matrix contains 25x25 such elevation data points
 	// This matrix contains 200x200 such elevation matrices.
 	Elevations [200][200][25][25]int16
-}
-
-type Buffer5000 struct {
-	EastingMin float64
-	NorthingMax float64
-	Buffer [5001][]float32
 }
 
 type DatasetReader interface {
