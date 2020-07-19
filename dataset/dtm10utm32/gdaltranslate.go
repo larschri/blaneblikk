@@ -1,16 +1,15 @@
-package main
+package dtm10utm32
 
 // #cgo CFLAGS: -Igdal
 // #cgo LDFLAGS: -lgdal
 // #include <ogr_srs_api.h>
 // #include <stdlib.h>
 import "C"
-import "github.com/larschri/blaner/dataset/dtm10utm32"
 
 var trans C.OGRCoordinateTransformationH
 
 func init() {
-	UTM32WKT := C.CString(dtm10utm32.UTM32WKT)
+	UTM32WKT := C.CString(UTM32WKT)
 	UTM32SpatialReference := C.OSRNewSpatialReference(UTM32WKT)
 	LatLngSpatialReference := C.OSRCloneGeogCS(UTM32SpatialReference)
 	trans = C.OCTNewCoordinateTransformation(LatLngSpatialReference, UTM32SpatialReference)

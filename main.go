@@ -35,8 +35,8 @@ func getFloatParam(req *http.Request, param string) float64 {
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	easting, northing := Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
-	easting1, northing1 := Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
+	easting, northing := dtm10utm32.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
+	easting1, northing1 := dtm10utm32.Translate(getFldtm10utm32oatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting-easting1, northing1-northing)
 	fmt.Println(angle)
 	xx := render.Args{
