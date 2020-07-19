@@ -9,8 +9,8 @@ import (
 	"unsafe"
 )
 
-// Mmapstruct contains elevation data stored on disk and loaded into memory using mmap.
-type Mmapstruct struct {
+// Mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
+type Mmap5000 struct {
 	EastingMin float64
 	NorthingMax float64
 	MaxElevations [200][200]int16
@@ -28,17 +28,17 @@ type Buffer5000 struct {
 	Buffer [5001][]float32
 }
 
-const mmapstructSize = unsafe.Sizeof(Mmapstruct{})
+const mmapstructSize = unsafe.Sizeof(Mmap5000{})
 
-func (m *Mmapstruct) Close() error {
+func (m *Mmap5000) Close() error {
 	return nil
 }
 
-func toMmapStruct(buf gdalbuffer) *Mmapstruct {
+func toMmapStruct(buf Buffer5000) *Mmap5000 {
 
-	result := Mmapstruct{
-		EastingMin: buf.eastingMin,
-		NorthingMax: buf.northingMax,
+	result := Mmap5000{
+		EastingMin: buf.EastingMin,
+		NorthingMax: buf.NorthingMax,
 	}
 
 	for i := 0; i < 200; i++ {
@@ -50,7 +50,7 @@ func toMmapStruct(buf gdalbuffer) *Mmapstruct {
 				for n := 0; n <= 25; n++ {
 					col := j * 25 + n
 
-					floatval := buf.buffer[row][col]
+					floatval := buf.Buffer[row][col]
 					intval := int16(math.Round(10 * float64(floatval)))
 
 					if m < 25 && n < 25 {
@@ -68,9 +68,9 @@ func toMmapStruct(buf gdalbuffer) *Mmapstruct {
 }
 
 // LoadAsMmap will load the given fname using syscall.mmap
-// The data can be accessed through the returned *Mmapstruct.
+// The data can be accessed through the returned *Mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
-func LoadAsMmap(fname string) (*Mmapstruct, error) {
+func LoadAsMmap(fname string) (*Mmap5000, error) {
 	mmapFname := "/tmp/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {
@@ -99,7 +99,7 @@ func writeMmapped(fname string, mmapFname string) error {
 	return ioutil.WriteFile(mmapFname, bytes, 0644)
 }
 
-func openMmapped(fname string) (*Mmapstruct, error) {
+func openMmapped(fname string) (*Mmap5000, error) {
 	file, err := os.OpenFile(fname, os.O_RDONLY, 0)
 	defer file.Close()
 
@@ -111,6 +111,6 @@ func openMmapped(fname string) (*Mmapstruct, error) {
 	if err != nil {
 		return nil, err
 	}
-	return (*Mmapstruct)(unsafe.Pointer(&data[0])), nil
+	return (*Mmap5000)(unsafe.Pointer(&data[0])), nil
 }
 

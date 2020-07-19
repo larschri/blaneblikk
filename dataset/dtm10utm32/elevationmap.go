@@ -8,7 +8,7 @@ import (
 type ElevationMap struct {
 	minEasting float64
 	maxNorthing float64
-	mmapStructs [50][50]*Mmapstruct
+	mmapStructs [50][50]*Mmap5000
 }
 
 type indices struct {
@@ -25,7 +25,7 @@ func arrayIndices(num int) indices {
 	}
 }
 
-func (em ElevationMap) lookupMmapStruct(e indices, n indices) *Mmapstruct {
+func (em ElevationMap) lookupMmapStruct(e indices, n indices) *Mmap5000 {
 	if e.i3 < 0 || e.i3 >= 50 || n.i3 < 0 || n.i3 >= 50 {
 		return nil
 	}
@@ -94,7 +94,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 }
 
 func LoadFiles(fNames []string) (ElevationMap, error) {
-	mmapStructs := []*Mmapstruct{}
+	mmapStructs := []*Mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
 		maxNorthing: - math.MaxFloat64,
