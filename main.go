@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/larschri/blaner/elevationmap"
+	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"github.com/larschri/blaner/render"
 	"image/png"
 	"math"
@@ -23,7 +23,7 @@ var args1 = render.Args{
 	MinHeight:   -.08,
 }
 
-var elevmap elevationmap.ElevationMap
+var elevmap dtm10utm32.ElevationMap
 
 func getFloatParam(req *http.Request, param string) float64 {
 	f, err := strconv.ParseFloat(req.URL.Query().Get(param), 64)
@@ -57,7 +57,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	elevmap, err = elevationmap.LoadFiles(files)
+	elevmap, err = dtm10utm32.LoadFiles(files)
 	if err != nil {
 		panic(err)
 	}

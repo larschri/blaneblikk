@@ -1,6 +1,6 @@
-package elevationmap
+package dtm10utm32
 
-// #cgo CFLAGS: -I../gdal
+// #cgo CFLAGS: -I../../gdal
 // #cgo LDFLAGS: -lgdal
 // #include <gdal.h>
 // #include <stdlib.h>

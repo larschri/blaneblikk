@@ -1,4 +1,4 @@
-package elevationmap
+package dtm10utm32
 
 import (
 	"fmt"
