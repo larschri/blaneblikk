@@ -22,6 +22,12 @@ type Mmapstruct struct {
 	Elevations [200][200][25][25]int16
 }
 
+type Buffer5000 struct {
+	EastingMin float64
+	NorthingMax float64
+	Buffer [5001][]float32
+}
+
 const mmapstructSize = unsafe.Sizeof(Mmapstruct{})
 
 func (m *Mmapstruct) Close() error {
