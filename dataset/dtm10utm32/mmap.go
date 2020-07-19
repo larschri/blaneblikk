@@ -28,18 +28,19 @@ type Buffer5000 struct {
 	Buffer [5001][]float32
 }
 
+type DatasetReader interface {
+	ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64)
+}
+
 const mmapstructSize = unsafe.Sizeof(Mmap5000{})
 
 func (m *Mmap5000) Close() error {
 	return nil
 }
 
-func toMmapStruct(buf Buffer5000) *Mmap5000 {
+func toMmapStruct(buf [][]float32) *Mmap5000 {
 
-	result := Mmap5000{
-		EastingMin: buf.EastingMin,
-		NorthingMax: buf.NorthingMax,
-	}
+	result := Mmap5000{}
 
 	for i := 0; i < 200; i++ {
 		for j := 0; j < 200; j++ {
@@ -50,7 +51,7 @@ func toMmapStruct(buf Buffer5000) *Mmap5000 {
 				for n := 0; n <= 25; n++ {
 					col := j * 25 + n
 
-					floatval := buf.Buffer[row][col]
+					floatval := buf[row][col]
 					intval := int16(math.Round(10 * float64(floatval)))
 
 					if m < 25 && n < 25 {
@@ -70,7 +71,7 @@ func toMmapStruct(buf Buffer5000) *Mmap5000 {
 // LoadAsMmap will load the given fname using syscall.mmap
 // The data can be accessed through the returned *Mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
-func LoadAsMmap(fname string) (*Mmap5000, error) {
+func LoadAsMmap(datasetReader DatasetReader, fname string) (*Mmap5000, error) {
 	mmapFname := "/tmp/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {
@@ -79,7 +80,7 @@ func LoadAsMmap(fname string) (*Mmap5000, error) {
 
 	mmapFileInfo, err := os.Stat(mmapFname)
 	if err != nil || fileInfo.ModTime().After(mmapFileInfo.ModTime()) || mmapFileInfo.Size() != int64(mmapstructSize) {
-		err = writeMmapped(fname, mmapFname)
+		err = writeMmapped(datasetReader, fname, mmapFname)
 		if err != nil {
 			return nil, err
 		}
@@ -88,12 +89,11 @@ func LoadAsMmap(fname string) (*Mmap5000, error) {
 	return openMmapped(mmapFname)
 }
 
-func writeMmapped(fname string, mmapFname string) error {
-	err, buf := readGDAL(fname)
-	if err != nil {
-		return err
-	}
+func writeMmapped(datasetReader DatasetReader, fname string, mmapFname string) error {
+	buf, e, n := datasetReader.ReadFile(fname)
 	mmapdata := toMmapStruct(buf)
+	mmapdata.EastingMin = e
+	mmapdata.NorthingMax = n
 
 	var bytes = (*(*[mmapstructSize]byte)(unsafe.Pointer(mmapdata)))[:]
 	return ioutil.WriteFile(mmapFname, bytes, 0644)

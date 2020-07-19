@@ -93,7 +93,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 		float64(l00) * (1 - er) * (1 - nr)) / 10
 }
 
-func LoadFiles(fNames []string) (ElevationMap, error) {
+func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
 	mmapStructs := []*Mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
@@ -101,7 +101,7 @@ func LoadFiles(fNames []string) (ElevationMap, error) {
 	}
 
 	for _, fName := range fNames {
-		mmapStruct, err := LoadAsMmap(fName)
+		mmapStruct, err := LoadAsMmap(datasetReader, fName)
 		if err != nil {
 			fmt.Printf("%s: %v\n", fName, err)
 			continue

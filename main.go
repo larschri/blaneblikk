@@ -57,7 +57,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	elevmap, err = dtm10utm32.LoadFiles(files)
+	elevmap, err = dtm10utm32.LoadFiles(dtm10utm32.Dataset{}, files)
 	if err != nil {
 		panic(err)
 	}

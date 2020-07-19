@@ -6,7 +6,6 @@ package dtm10utm32
 // #include <stdlib.h>
 import "C"
 import (
-	"errors"
 	"log"
 	"unsafe"
 )
@@ -17,13 +16,16 @@ func init() {
 	C.GDALAllRegister()
 }
 
-func readGDAL(fname string) (error, Buffer5000) {
+type Dataset struct {
+}
+
+func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
 	log.Printf("reading %s", fname)
 	cstr := C.CString(fname)
 	defer C.free(unsafe.Pointer(cstr))
 	ds := C.GDALOpen(cstr, C.GA_ReadOnly)
 	if ds == nil {
-		return errors.New("failed to read dem file"), Buffer5000{}
+		panic("failed to read dem file")
 	}
 
 	wkt := C.GDALGetProjectionRef(ds)
@@ -33,10 +35,10 @@ func readGDAL(fname string) (error, Buffer5000) {
 
 	var gdalTransformArray [6]float64
 	if C.GDALGetGeoTransform(ds, (*C.double) (&gdalTransformArray[0])) != C.CE_None {
-		return errors.New("failed to run transform"), Buffer5000{}
+		panic("failed to run transform")
 	}
 	if gdalTransformArray[1] != 10 || gdalTransformArray[5] != -10 {
-		return errors.New("unexpected file format"), Buffer5000{}
+		panic("unexpected file format")
 	}
 
 	xsize := C.GDALGetRasterXSize(ds)
@@ -49,7 +51,7 @@ func readGDAL(fname string) (error, Buffer5000) {
 	buf := make([]float32, xsize * ysize)
 	band := C.GDALGetRasterBand(ds, 1)
 	if C.GDALRasterIO(band, C.GF_Read, 0, 0, xsize, ysize, unsafe.Pointer(&buf[0]), xsize, ysize, C.GDT_Float32, 0, 0) != C.CE_None {
-		return errors.New("failed to read elevation buffer from file"), Buffer5000{}
+		panic("failed to read elevation buffer from file")
 	}
 
 	// Input files are not aligned to the same global 10x10 matrix.
@@ -59,13 +61,11 @@ func readGDAL(fname string) (error, Buffer5000) {
 	colOffset := eastingOffset / 10
 	rowOffset := northingOffset / 10
 
-	result := Buffer5000{
-		EastingMin : gdalTransformArray[0] + float64(eastingOffset),
-		NorthingMax : gdalTransformArray[3] - float64(northingOffset),
-	}
+	minEasting = gdalTransformArray[0] + float64(eastingOffset)
+	maxNorthing = gdalTransformArray[3] - float64(northingOffset)
 	for i := 0; i < 5001; i++ {
 		offset := colOffset + (i + rowOffset) * int(xsize)
-		result.Buffer[i] = buf[offset:offset+5001]
+		buffer = append(buffer, buf[offset:offset+5001])
 	}
-	return nil, result
+	return
 }
