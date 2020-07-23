@@ -66,7 +66,10 @@ func main() {
 	if len(os.Args) < 2 {
 		http.HandleFunc("/blaner", blanerHandler)
 		http.Handle("/", http.FileServer(http.Dir("htdocs")))
-		http.ListenAndServe(":8090", nil)
+		err := http.ListenAndServe(":8090", nil)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		img := render.CreateImage(args1, elevmap)
 		f, _ := os.Create("foo.png")

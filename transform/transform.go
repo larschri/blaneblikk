@@ -5,11 +5,6 @@ import (
 	"math"
 )
 
-type Geopixel struct {
-	Distance float64
-	Incline float64
-}
-
 type Transform struct {
 	Easting     float64
 	Northing    float64
@@ -27,8 +22,8 @@ type loopValues struct {
 	elevation float64
 }
 
-func (transform Transform) TraceDirection(rad float64, elevation0 float64) []Geopixel{
-	geopixels := make([]Geopixel, 0)
+func (transform Transform) TraceDirection(rad float64, elevation0 float64) []dataset5000.Geopixel {
+	geopixels := make([]dataset5000.Geopixel, 0)
 	loopValueSlice := make([]loopValues, 0)
 	sin := math.Sin(rad)
 	cos := math.Cos(rad)
@@ -66,7 +61,7 @@ func (transform Transform) TraceDirection(rad float64, elevation0 float64) []Geo
 		heightAngle := math.Atan2(loopVals.elevation - elevation0, dist)
 
 		for currHeightAngle + loopVals.earthCurvatureAngle <= heightAngle {
-			geopixels = append(geopixels, Geopixel{
+			geopixels = append(geopixels, dataset5000.Geopixel{
 				Distance: dist,
 				Incline:  (loopVals.elevation - prevElevation),
 			})

@@ -18,7 +18,7 @@ type Args struct {
 	MinHeight   float64
 }
 
-func getRGB(b transform.Geopixel) rgb {
+func getRGB(b dataset5000.Geopixel) rgb {
 	incline := math.Max(0, math.Min(1, b.Incline/20))
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
@@ -39,10 +39,19 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 		ElevMap:     elevMap,
 		GeopixelLen: geopixelLen,
 	}
+	trans2 := dataset5000.Transform{
+		Easting:     view.Easting,
+		Northing:    view.Northing,
+		ElevMap:     elevMap,
+		GeopixelLen: geopixelLen,
+	}
 
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
 		geopixels := trans.TraceDirection(rad, elevation0)
+		if i > (view.Columns / 2) - 20 && i < (view.Columns / 2) + 20 {
+			geopixels = trans2.TraceDirectionExperimental(rad, elevation0)
+		}
 
 		len := len(geopixels)
 		if len > geopixelLen {
