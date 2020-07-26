@@ -114,12 +114,7 @@ func (iter *squareIterator) elevation(step int) float64 {
 	}
 }
 
-func ClampToUnit(val float64) int {
-	ival := int(val)
-	return ival - ival % unit
-}
-
-func (sq *squareIterator) wlappah(elevation float64, i int) {
+func (sq *squareIterator) updateState(elevation float64, i int) {
 	dist := float64(i) * sq.step
 	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
 
@@ -145,10 +140,18 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 	sq.geopixelLen = t.GeopixelLen
 
 	steps := int(2000000.0 / sq.step)
-	for i := int(step); i < steps; i = i + int(step) {
-		elevation := sq.elevation(i)
-		sq.wlappah(elevation, i)
+	if math.Abs(sq.eastStep) == 1 {
+		for i := int(step); i < steps; i = i + int(step) {
+			elevation := sq.ElevMap.GetElevationEast(int(sq.easting)+i*int(sq.eastStep), sq.northing+float64(i)*sq.northStep)
+			sq.updateState(elevation, i)
+		}
+	} else {
+		for i := int(step); i < steps; i = i + int(step) {
+			elevation := sq.ElevMap.GetElevationNorth(sq.easting+float64(i)*sq.eastStep, int(sq.northing)+i*int(sq.northStep))
+			sq.updateState(elevation, i)
+		}
 	}
+
 	return sq.geopixels
 }
 
