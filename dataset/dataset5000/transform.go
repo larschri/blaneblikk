@@ -32,19 +32,26 @@ type loopValues struct {
 }
 
 type squareIterator struct {
-	sideStep float64
-	step float64
-	front0 int // modulo smallSquareSize
-	side0 int // modulo smallSquareSize
+	sideStep         float64
+	step             float64
+	front0           int // modulo smallSquareSize
+	side0            int // modulo smallSquareSize
 	smallSquareFront int
-	smallSquareSide int
+	smallSquareSide  int
 
 	nextSideJump int
-	ElevMap     ElevationMap
-	eastStep float64
-	northStep float64
-	easting float64
-	northing float64
+	ElevMap      ElevationMap
+	eastStep     float64
+	northStep    float64
+	easting      float64
+	northing     float64
+
+	//
+	geopixels       []Geopixel
+	currHeightAngle float64
+	prevElevation   float64
+	elevation0      float64
+	geopixelLen     int
 }
 
 func (iter *squareIterator) updateNextSideJump() {
@@ -112,31 +119,37 @@ func ClampToUnit(val float64) int {
 	return ival - ival % unit
 }
 
+func (sq *squareIterator) wlappah(elevation float64, i int) {
+	dist := float64(i) * sq.step
+	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
+
+	heightAngle := math.Atan2(elevation - sq.elevation0, dist)
+
+	for sq.currHeightAngle + earthCurvatureAngle <= heightAngle {
+		sq.geopixels = append(sq.geopixels, Geopixel{
+			Distance: dist,
+			Incline:  (elevation - sq.prevElevation) / sq.step,
+		})
+		sq.currHeightAngle = float64(len(sq.geopixels)) * totalHeightAngle / float64(sq.geopixelLen) + bottomHeightAngle
+	}
+	sq.prevElevation = elevation
+}
+
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
-	geopixels := make([]Geopixel, 0)
-	currHeightAngle := bottomHeightAngle
-	prevElevation := elevation0
 	var sq squareIterator
 	sq.init(rad, int(t.Northing), int(t.Easting), t.ElevMap)
+	sq.geopixels = make([]Geopixel, 0)
+	sq.currHeightAngle = bottomHeightAngle
+	sq.prevElevation = elevation0
+	sq.elevation0 = elevation0
+	sq.geopixelLen = t.GeopixelLen
 
 	steps := int(2000000.0 / sq.step)
 	for i := int(step); i < steps; i = i + int(step) {
-		dist := float64(i) * sq.step
-		earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
 		elevation := sq.elevation(i)
-
-		heightAngle := math.Atan2(elevation - elevation0, dist)
-
-		for currHeightAngle + earthCurvatureAngle <= heightAngle {
-			geopixels = append(geopixels, Geopixel{
-				Distance: dist,
-				Incline:  (elevation - prevElevation) / sq.step,
-			})
-			currHeightAngle = float64(len(geopixels)) * totalHeightAngle / float64(t.GeopixelLen) + bottomHeightAngle
-		}
-		prevElevation = elevation
+		sq.wlappah(elevation, i)
 	}
-	return geopixels
+	return sq.geopixels
 }
 
 func (t Transform) TraceDirectionPlain(rad float64, elevation0 float64) []Geopixel {
