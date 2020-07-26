@@ -112,33 +112,12 @@ func ClampToUnit(val float64) int {
 	return ival - ival % unit
 }
 
-func (t Transform) traverseSmallSquare() {
-
-}
-
-func (t Transform) TraceDirection(rad float64, elevation0 float64) []Geopixel {
-	var iter squareIterator
-	iter.init(rad, ClampToUnit(t.Northing), ClampToUnit(t.Easting), t.ElevMap)
-	for i := 0; i < (smallSquareSize - iter.front0); i++ {
-
-	}
-	iter.next()
-	for u := 0; u < 1000; u++ {
-		for i := 0; i < smallSquareSize; i++ {
-		}
-		iter.next()
-	}
-	return []Geopixel{}
-}
-
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
 	geopixels := make([]Geopixel, 0)
 	currHeightAngle := bottomHeightAngle
 	prevElevation := elevation0
 	var sq squareIterator
 	sq.init(rad, int(t.Northing), int(t.Easting), t.ElevMap)
-	t.Easting = math.Floor(t.Easting / 10) * 10
-	t.Northing = math.Floor(t.Northing / 10) * 10
 
 	steps := int(2000000.0 / sq.step)
 	for i := int(step); i < steps; i = i + int(step) {
