@@ -106,14 +106,6 @@ func (iter *squareIterator) init(rad float64, northing int, easting int, e Eleva
 	iter.updateNextSideJump()
 }
 
-func (iter *squareIterator) elevation(step int) float64 {
-	if math.Abs(iter.eastStep) == 1 {
-		return iter.ElevMap.GetElevationEast(int(iter.easting) + step * int(iter.eastStep), iter.northing + float64(step) * iter.northStep)
-	} else {
-		return iter.ElevMap.GetElevationNorth(iter.easting + float64(step) * iter.eastStep, int(iter.northing) + step * int(iter.northStep))
-	}
-}
-
 func (sq *squareIterator) updateState(elevation float64, i int) {
 	dist := float64(i) * sq.step
 	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
