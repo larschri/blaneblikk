@@ -46,9 +46,22 @@ func (em ElevationMap) lookup(e indices, n indices) int16 {
 	return ms.Elevations[n.i2][e.i2][n.i1][e.i1]
 }
 
-func (em ElevationMap) GetElevationEast(easting int, northing float64) float64 {
-	easting2 := (easting - int(em.minEasting)) / 10
-	northing2 := (em.maxNorthing - northing) / 10
+func (em ElevationMap) lookupSquare(e int, n int) *[25][25]int16 {
+	if e < 0 || n < 0 {
+		return nil
+	}
+	n0 := arrayIndices(n)
+	e0 := arrayIndices(e)
+
+	mmapStruct := em.lookupMmapStruct(e0, n0)
+	if mmapStruct == nil {
+		return nil
+	}
+
+	return &mmapStruct.Elevations[n0.i2][e0.i2]
+}
+
+func (em ElevationMap) GetElevationEast(easting2 int, northing2 float64) float64 {
 	nrest := int(math.Floor(northing2))
 
 	if easting2 < 0 || nrest < 0 {
