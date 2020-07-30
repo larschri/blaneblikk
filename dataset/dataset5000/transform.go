@@ -26,20 +26,9 @@ const step float64 = 10
 const bottomHeightAngle float64 = -0.08
 const totalHeightAngle float64 = 0.16
 
-type loopValues struct {
-	earthCurvatureAngle float64
-	elevation float64
-}
-
 type squareIterator struct {
-	sideStep         float64
 	step             float64
-	front0           int // modulo smallSquareSize
-	side0            int // modulo smallSquareSize
-	smallSquareFront int
-	smallSquareSide  int
 
-	nextSideJump int
 	ElevMap      ElevationMap
 	eastStep     float64
 	northStep    float64
@@ -52,32 +41,6 @@ type squareIterator struct {
 	prevElevation   float64
 	elevation0      float64
 	geopixelLen     int
-}
-
-func (iter *squareIterator) updateNextSideJump() {
-	deltaY := (smallSquareSize - iter.side0) + smallSquareSize * iter.smallSquareSide
-	iter.nextSideJump = int(math.Ceil(float64(deltaY) / iter.sideStep))
-}
-
-func (iter *squareIterator) next() {
-	iter.smallSquareFront++
-	if (smallSquareSize - iter.front0) + smallSquareSize * iter.smallSquareFront > iter.nextSideJump {
-		iter.smallSquareSide++
-		iter.updateNextSideJump()
-	}
-}
-
-func (iter *squareIterator) init2(fronting int, siding int, frontComponent float64, sideComponent float64) {
-	iter.sideStep = math.Abs(sideComponent / frontComponent)
-	iter.step = float64(1) / math.Abs(frontComponent)
-	iter.front0 = fronting % smallSquareSize
-	iter.side0 = siding % smallSquareSize
-	if frontComponent < 0 {
-		iter.front0 = smallSquareSize - iter.front0
-	}
-	if sideComponent < 0 {
-		iter.side0 = smallSquareSize - iter.side0
-	}
 }
 
 func sign(i float64) int {
@@ -97,13 +60,12 @@ func (iter *squareIterator) init(rad float64, northing int, easting int, e Eleva
 	if math.Abs(sin) > math.Abs(cos) {
 		iter.eastStep = float64(sign(sin))
 		iter.northStep = cos / math.Abs(sin)
-		iter.init2(easting, northing, sin, cos)
+		iter.step = float64(1) / math.Abs(sin)
 	} else {
 		iter.eastStep = sin / math.Abs(cos)
 		iter.northStep = float64(sign(cos))
-		iter.init2(northing, easting, cos, sin)
+		iter.step = float64(1) / math.Abs(cos)
 	}
-	iter.updateNextSideJump()
 }
 
 func (sq *squareIterator) updateState(elevation float64, i int) {
