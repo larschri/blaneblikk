@@ -29,8 +29,6 @@ const totalHeightAngle float64 = 0.16
 type squareIterator struct {
 	stepLength float64
 
-	eastStepLength  float64
-	northStepLength float64
 	easting         float64
 	northing        float64
 
@@ -66,7 +64,7 @@ func (sq *squareIterator) updateState(elevation float64, i int) {
 	sq.prevElevation = elevation
 }
 
-func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap) {
+func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepLength int, northStepLength float64) {
 	totalSteps := int(2000000.0 / sq.stepLength)
 	emodPrev := uint32(10000)
 	nmodPrev := uint32(10000)
@@ -74,8 +72,8 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap) {
 	var sq0 *[25][25]int16
 	var sq1 *[25][25]int16
 	for i := 1; i < totalSteps; i++ {
-		eastingIndex := (int(sq.easting) + i*int(sq.eastStepLength) - int(elevationMap.minEasting)) / 10
-		northingIndex := (elevationMap.maxNorthing - (sq.northing+float64(i)*sq.northStepLength)) / 10
+		eastingIndex := (int(sq.easting) + i*eastStepLength - int(elevationMap.minEasting)) / 10
+		northingIndex := (elevationMap.maxNorthing - (sq.northing + float64(i)*northStepLength)) / 10
 		nrest := int(math.Floor(northingIndex))
 
 		emod := uint32(eastingIndex) % smallSquareSize
@@ -101,7 +99,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap) {
 
 		nr := northingIndex - float64(nrest)
 		elev2 := (float64(l01) * nr +
-			float64(l00) * (1 - nr)) / 10
+			float64(l00) * (1 - nr)) / step
 
 		sq.updateState(elev2, i)
 		emodPrev = emod
@@ -120,21 +118,19 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 	sq.elevation0 = elevation0
 	sq.geopixelLen = t.GeopixelLen
 
-	steps := int(2000000.0 / sq.stepLength)
 	sin := math.Sin(rad) // east
 	cos := math.Cos(rad) // north
 
 	if math.Abs(sin) > math.Abs(cos) {
-		sq.eastStepLength = step * float64(sign(sin))
-		sq.northStepLength = step * cos / math.Abs(sin)
-		sq.stepLength = step * float64(1) / math.Abs(sin)
-		sq.TraceEastWest(t.ElevMap)
+		sq.stepLength = step / math.Abs(sin)
+		sq.TraceEastWest(t.ElevMap, int(step) * sign(sin), step * cos / math.Abs(sin))
 	} else {
-		sq.eastStepLength = step * sin / math.Abs(cos)
-		sq.northStepLength = step * float64(sign(cos))
-		sq.stepLength = step * float64(1) / math.Abs(cos)
+		sq.stepLength = step / math.Abs(cos)
+		steps := int(2000000.0 / sq.stepLength)
+		eastStepLength := step * sin / math.Abs(cos)
+		northStepLength := step * float64(sign(cos))
 		for i := 1; i < steps; i++ {
-			elevation := t.ElevMap.GetElevationNorth(sq.easting+float64(i)*sq.eastStepLength, int(sq.northing)+i*int(sq.northStepLength))
+			elevation := t.ElevMap.GetElevationNorth(sq.easting+float64(i)*eastStepLength, int(sq.northing)+i*int(northStepLength))
 			sq.updateState(elevation, i)
 		}
 	}
