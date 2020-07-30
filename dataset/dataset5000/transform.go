@@ -50,22 +50,6 @@ func sign(i float64) int {
 	}
 }
 
-func (iter *squareIterator) init(rad float64, northing int, easting int) {
-	iter.northing = float64(northing / 10) * 10
-	iter.easting = float64(easting / 10) * 10
-	sin := math.Sin(rad) // east
-	cos := math.Cos(rad) // north
-	if math.Abs(sin) > math.Abs(cos) {
-		iter.eastStepLength = float64(sign(sin))
-		iter.northStepLength = cos / math.Abs(sin)
-		iter.stepLength = float64(1) / math.Abs(sin)
-	} else {
-		iter.eastStepLength = sin / math.Abs(cos)
-		iter.northStepLength = float64(sign(cos))
-		iter.stepLength = float64(1) / math.Abs(cos)
-	}
-}
-
 func (sq *squareIterator) updateState(elevation float64, i int) {
 	dist := float64(i) * sq.stepLength
 	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
@@ -128,7 +112,20 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap) {
 
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
 	var sq squareIterator
-	sq.init(rad, int(t.Northing), int(t.Easting))
+	sq.northing = float64(int(t.Northing) / 10) * 10
+	sq.easting = float64(int(t.Easting) / 10) * 10
+	sin := math.Sin(rad) // east
+	cos := math.Cos(rad) // north
+	if math.Abs(sin) > math.Abs(cos) {
+		sq.eastStepLength = float64(sign(sin))
+		sq.northStepLength = cos / math.Abs(sin)
+		sq.stepLength = float64(1) / math.Abs(sin)
+	} else {
+		sq.eastStepLength = sin / math.Abs(cos)
+		sq.northStepLength = float64(sign(cos))
+		sq.stepLength = float64(1) / math.Abs(cos)
+	}
+
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
