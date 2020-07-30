@@ -114,18 +114,6 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 	var sq squareIterator
 	sq.northing = float64(int(t.Northing) / 10) * 10
 	sq.easting = float64(int(t.Easting) / 10) * 10
-	sin := math.Sin(rad) // east
-	cos := math.Cos(rad) // north
-	if math.Abs(sin) > math.Abs(cos) {
-		sq.eastStepLength = float64(sign(sin))
-		sq.northStepLength = cos / math.Abs(sin)
-		sq.stepLength = float64(1) / math.Abs(sin)
-	} else {
-		sq.eastStepLength = sin / math.Abs(cos)
-		sq.northStepLength = float64(sign(cos))
-		sq.stepLength = float64(1) / math.Abs(cos)
-	}
-
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
@@ -133,9 +121,18 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 	sq.geopixelLen = t.GeopixelLen
 
 	steps := int(2000000.0 / sq.stepLength)
-	if math.Abs(sq.eastStepLength) == 1 {
+	sin := math.Sin(rad) // east
+	cos := math.Cos(rad) // north
+
+	if math.Abs(sin) > math.Abs(cos) {
+		sq.eastStepLength = float64(sign(sin))
+		sq.northStepLength = cos / math.Abs(sin)
+		sq.stepLength = float64(1) / math.Abs(sin)
 		sq.TraceEastWest(t.ElevMap)
 	} else {
+		sq.eastStepLength = sin / math.Abs(cos)
+		sq.northStepLength = float64(sign(cos))
+		sq.stepLength = float64(1) / math.Abs(cos)
 		for i := int(step); i < steps; i = i + int(step) {
 			elevation := t.ElevMap.GetElevationNorth(sq.easting+float64(i)*sq.eastStepLength, int(sq.northing)+i*int(sq.northStepLength))
 			sq.updateState(elevation, i)
