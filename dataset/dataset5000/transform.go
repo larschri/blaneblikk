@@ -27,13 +27,12 @@ const bottomHeightAngle float64 = -0.08
 const totalHeightAngle float64 = 0.16
 
 type squareIterator struct {
-	step             float64
+	stepLength float64
 
-	ElevMap      ElevationMap
-	eastStep     float64
-	northStep    float64
-	easting      float64
-	northing     float64
+	eastStepLength  float64
+	northStepLength float64
+	easting         float64
+	northing        float64
 
 	//
 	geopixels       []Geopixel
@@ -51,25 +50,24 @@ func sign(i float64) int {
 	}
 }
 
-func (iter *squareIterator) init(rad float64, northing int, easting int, e ElevationMap) {
+func (iter *squareIterator) init(rad float64, northing int, easting int) {
 	iter.northing = float64(northing / 10) * 10
 	iter.easting = float64(easting / 10) * 10
-	iter.ElevMap = e
 	sin := math.Sin(rad) // east
 	cos := math.Cos(rad) // north
 	if math.Abs(sin) > math.Abs(cos) {
-		iter.eastStep = float64(sign(sin))
-		iter.northStep = cos / math.Abs(sin)
-		iter.step = float64(1) / math.Abs(sin)
+		iter.eastStepLength = float64(sign(sin))
+		iter.northStepLength = cos / math.Abs(sin)
+		iter.stepLength = float64(1) / math.Abs(sin)
 	} else {
-		iter.eastStep = sin / math.Abs(cos)
-		iter.northStep = float64(sign(cos))
-		iter.step = float64(1) / math.Abs(cos)
+		iter.eastStepLength = sin / math.Abs(cos)
+		iter.northStepLength = float64(sign(cos))
+		iter.stepLength = float64(1) / math.Abs(cos)
 	}
 }
 
 func (sq *squareIterator) updateState(elevation float64, i int) {
-	dist := float64(i) * sq.step
+	dist := float64(i) * sq.stepLength
 	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
 
 	heightAngle := math.Atan2(elevation - sq.elevation0, dist)
@@ -77,30 +75,30 @@ func (sq *squareIterator) updateState(elevation float64, i int) {
 	for sq.currHeightAngle + earthCurvatureAngle <= heightAngle {
 		sq.geopixels = append(sq.geopixels, Geopixel{
 			Distance: dist,
-			Incline:  (elevation - sq.prevElevation) / sq.step,
+			Incline:  (elevation - sq.prevElevation) / sq.stepLength,
 		})
 		sq.currHeightAngle = float64(len(sq.geopixels)) * totalHeightAngle / float64(sq.geopixelLen) + bottomHeightAngle
 	}
 	sq.prevElevation = elevation
 }
 
-func (sq *squareIterator) TraceEastWest() {
-	steps := int(2000000.0 / sq.step)
+func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap) {
+	totalSteps := int(2000000.0 / sq.stepLength)
 	emodPrev := uint32(10000)
 	nmodPrev := uint32(10000)
 	nmod2Prev := uint32(10000)
 	var sq0 *[25][25]int16
 	var sq1 *[25][25]int16
-	for i := int(step); i < steps; i = i + int(step) {
-		easting2 := (int(sq.easting)+i*int(sq.eastStep) - int(sq.ElevMap.minEasting)) / 10
-		northing2 := (sq.ElevMap.maxNorthing - (sq.northing+float64(i)*sq.northStep)) / 10
-		nrest := int(math.Floor(northing2))
+	for i := int(step); i < totalSteps; i = i + int(step) {
+		eastingIndex := (int(sq.easting) + i*int(sq.eastStepLength) - int(elevationMap.minEasting)) / 10
+		northingIndex := (elevationMap.maxNorthing - (sq.northing+float64(i)*sq.northStepLength)) / 10
+		nrest := int(math.Floor(northingIndex))
 
-		emod := uint32(easting2) % smallSquareSize
+		emod := uint32(eastingIndex) % smallSquareSize
 		nmod := uint32(nrest) % smallSquareSize
 
 		if math.Abs(float64(emodPrev - emod)) > 1.0 || math.Abs(float64(nmodPrev - nmod)) > 1.0 {
-			sq0 = sq.ElevMap.lookupSquare(easting2, nrest)
+			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
 			if sq0 == nil {
 				break
 			}
@@ -108,7 +106,7 @@ func (sq *squareIterator) TraceEastWest() {
 
 		nmod2 := uint32(uint32(nrest + 1) % smallSquareSize)
 		if math.Abs(float64(emodPrev - emod)) > 1.0 || math.Abs(float64(nmod2Prev - nmod2)) > 1.0 {
-			sq1 = sq.ElevMap.lookupSquare(easting2, nrest + 1)
+			sq1 = elevationMap.lookupSquare(eastingIndex, nrest + 1)
 			if sq1 == nil {
 				break
 			}
@@ -117,7 +115,7 @@ func (sq *squareIterator) TraceEastWest() {
 		l00 := sq0[nmod][emod]
 		l01 := sq1[nmod2][emod]
 
-		nr := northing2 - float64(nrest)
+		nr := northingIndex - float64(nrest)
 		elev2 := (float64(l01) * nr +
 			float64(l00) * (1 - nr)) / 10
 
@@ -130,19 +128,19 @@ func (sq *squareIterator) TraceEastWest() {
 
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
 	var sq squareIterator
-	sq.init(rad, int(t.Northing), int(t.Easting), t.ElevMap)
+	sq.init(rad, int(t.Northing), int(t.Easting))
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
 	sq.elevation0 = elevation0
 	sq.geopixelLen = t.GeopixelLen
 
-	steps := int(2000000.0 / sq.step)
-	if math.Abs(sq.eastStep) == 1 {
-		sq.TraceEastWest()
+	steps := int(2000000.0 / sq.stepLength)
+	if math.Abs(sq.eastStepLength) == 1 {
+		sq.TraceEastWest(t.ElevMap)
 	} else {
 		for i := int(step); i < steps; i = i + int(step) {
-			elevation := sq.ElevMap.GetElevationNorth(sq.easting+float64(i)*sq.eastStep, int(sq.northing)+i*int(sq.northStep))
+			elevation := t.ElevMap.GetElevationNorth(sq.easting+float64(i)*sq.eastStepLength, int(sq.northing)+i*int(sq.northStepLength))
 			sq.updateState(elevation, i)
 		}
 	}
