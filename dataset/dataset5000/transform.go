@@ -40,7 +40,7 @@ type squareIterator struct {
 	geopixelLen     int
 }
 
-func sign(i float64) int {
+func sign(i float64) intStep {
 	if i < 0 {
 		return -1
 	} else {
@@ -48,7 +48,7 @@ func sign(i float64) int {
 	}
 }
 
-func (sq *squareIterator) updateState(elevation float64, i int) {
+func (sq *squareIterator) updateState(elevation float64, i intStep) {
 	dist := float64(i) * sq.stepLength
 	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
 
@@ -64,17 +64,23 @@ func (sq *squareIterator) updateState(elevation float64, i int) {
 	sq.prevElevation = elevation
 }
 
-func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepLength int, northStepLength float64) {
-	totalSteps := int(2000000.0 / sq.stepLength)
+// intStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
+// easting/northing. intStep values must be multiplied by 10 to get easting/northing
+type intStep int
+
+func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
+	totalSteps := intStep(2000000.0 / sq.stepLength)
 	emodPrev := uint32(10000)
 	nmodPrev := uint32(10000)
 	nmod2Prev := uint32(10000)
 	var sq0 *[25][25]int16
 	var sq1 *[25][25]int16
-	for i := 1; i < totalSteps; i++ {
-		eastingIndex := (int(sq.easting) + i*eastStepLength - int(elevationMap.minEasting)) / 10
-		northingIndex := (elevationMap.maxNorthing - (sq.northing + float64(i)*northStepLength)) / 10
-		nrest := int(math.Floor(northingIndex))
+	var eastingStart = intStep(sq.easting - elevationMap.minEasting) / 10
+	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
+	for i := intStep(1); i < totalSteps; i++ {
+		eastingIndex := eastingStart + i * eastStepSign
+		northingIndex := northingStart - float64(i) * northStepLength
+		nrest := intStep(math.Floor(northingIndex))
 
 		emod := uint32(eastingIndex) % smallSquareSize
 		nmod := uint32(nrest) % smallSquareSize
@@ -123,16 +129,9 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 
 	if math.Abs(sin) > math.Abs(cos) {
 		sq.stepLength = step / math.Abs(sin)
-		sq.TraceEastWest(t.ElevMap, int(step) * sign(sin), step * cos / math.Abs(sin))
+		sq.TraceEastWest(t.ElevMap, sign(sin), cos / math.Abs(sin))
 	} else {
-		sq.stepLength = step / math.Abs(cos)
-		steps := int(2000000.0 / sq.stepLength)
-		eastStepLength := step * sin / math.Abs(cos)
-		northStepLength := step * float64(sign(cos))
-		for i := 1; i < steps; i++ {
-			elevation := t.ElevMap.GetElevationNorth(sq.easting+float64(i)*eastStepLength, int(sq.northing)+i*int(northStepLength))
-			sq.updateState(elevation, i)
-		}
+		panic("oops")
 	}
 
 	return sq.geopixels
