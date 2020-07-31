@@ -64,15 +64,23 @@ func (sq *squareIterator) updateState(elevation float64, i intStep) {
 	sq.prevElevation = elevation
 }
 
+func atBorder(a intStep, b intStep) bool {
+	if a > b {
+		return a-b > 1 || b < 0
+	}
+
+	return b-a > 1 || a < 0
+}
+
 // intStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
 func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
 	totalSteps := intStep(2000000.0 / sq.stepLength)
-	emodPrev := uint32(10000)
-	nmodPrev := uint32(10000)
-	nmod2Prev := uint32(10000)
+	emodPrev := intStep(10000)
+	nmodPrev := intStep(10000)
+	nmod2Prev := intStep(10000)
 	var sq0 *[25][25]int16
 	var sq1 *[25][25]int16
 	var eastingStart = intStep(sq.easting - elevationMap.minEasting) / 10
@@ -82,18 +90,18 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		northingIndex := northingStart - float64(i) * northStepLength
 		nrest := intStep(math.Floor(northingIndex))
 
-		emod := uint32(eastingIndex) % smallSquareSize
-		nmod := uint32(nrest) % smallSquareSize
+		emod := eastingIndex % smallSquareSize
+		nmod := nrest % smallSquareSize
 
-		if math.Abs(float64(emodPrev - emod)) > 1.0 || math.Abs(float64(nmodPrev - nmod)) > 1.0 {
+		if atBorder(emodPrev, emod) || atBorder(nmodPrev, nmod) {
 			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
 			if sq0 == nil {
 				break
 			}
 		}
 
-		nmod2 := uint32(uint32(nrest + 1) % smallSquareSize)
-		if math.Abs(float64(emodPrev - emod)) > 1.0 || math.Abs(float64(nmod2Prev - nmod2)) > 1.0 {
+		nmod2 := (nrest + 1) % smallSquareSize
+		if atBorder(emodPrev, emod) || atBorder(nmod2Prev, nmod2) {
 			sq1 = elevationMap.lookupSquare(eastingIndex, nrest + 1)
 			if sq1 == nil {
 				break
