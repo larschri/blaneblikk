@@ -2,7 +2,6 @@ package render
 
 import (
 	"github.com/larschri/blaner/dataset/dataset5000"
-	"github.com/larschri/blaner/transform"
 	"image"
 	"math"
 )
@@ -33,12 +32,6 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 		image.Point{view.Columns, geopixelLen / subPixels},
 	})
 
-	trans := transform.Transform{
-		Easting:     view.Easting,
-		Northing:    view.Northing,
-		ElevMap:     elevMap,
-		GeopixelLen: geopixelLen,
-	}
 	trans2 := dataset5000.Transform{
 		Easting:     view.Easting,
 		Northing:    view.Northing,
@@ -48,10 +41,7 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
-		geopixels := trans.TraceDirection(rad, elevation0)
-		if i > (view.Columns / 2) - 20 && i < (view.Columns / 2) + 20 {
-			geopixels = trans2.TraceDirectionExperimental(rad, elevation0)
-		}
+		geopixels := trans2.TraceDirectionExperimental(rad, elevation0)
 
 		len := len(geopixels)
 		if len > geopixelLen {
@@ -69,7 +59,6 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 			img.Set(view.Columns-i, (geopixelLen-j)/subPixels, c.normalize().getColor(uint8(alpha)))
 		}
 
-		//fmt.Println("col", i)
 	}
 	return img
 }
