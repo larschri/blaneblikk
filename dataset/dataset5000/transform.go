@@ -122,49 +122,49 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 	}
 }
 
-func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
+func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLength float64, northStepSign intStep) {
 	totalSteps := intStep(2000000.0 / sq.stepLength)
 	emodPrev := intStep(10000)
 	nmodPrev := intStep(10000)
-	nmod2Prev := intStep(10000)
+	emod2Prev := intStep(10000)
 	var sq0 *[25][25]int16
 	var sq1 *[25][25]int16
-	var eastingStart = intStep(sq.easting - elevationMap.minEasting) / 10
-	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
+	var eastingStart = (sq.easting - elevationMap.minEasting) / 10
+	var northingStart = intStep(elevationMap.maxNorthing - sq.northing) / 10
 	for i := intStep(1); i < totalSteps; i++ {
-		eastingIndex := eastingStart + i * eastStepSign
-		northingIndex := northingStart - float64(i) * northStepLength
-		nrest := intStep(math.Floor(northingIndex))
+		northingIndex := northingStart - i * northStepSign
+		eastingIndex := eastingStart + float64(i) * eastStepLength
+		erest := intStep(math.Floor(eastingIndex))
 
-		emod := eastingIndex % smallSquareSize
-		nmod := nrest % smallSquareSize
+		emod := erest % smallSquareSize
+		nmod := northingIndex % smallSquareSize
 
 		if atBorder(emodPrev, emod) || atBorder(nmodPrev, nmod) {
-			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
+			sq0 = elevationMap.lookupSquare(erest, northingIndex)
 			if sq0 == nil {
 				break
 			}
 		}
 
-		nmod2 := (nrest + 1) % smallSquareSize
-		if atBorder(emodPrev, emod) || atBorder(nmod2Prev, nmod2) {
-			sq1 = elevationMap.lookupSquare(eastingIndex, nrest + 1)
+		emod2 := (erest + 1) % smallSquareSize
+		if atBorder(nmodPrev, nmod) || atBorder(emod2Prev, emod2) {
+			sq1 = elevationMap.lookupSquare(erest + 1, northingIndex)
 			if sq1 == nil {
 				break
 			}
 		}
 
 		l00 := sq0[nmod][emod]
-		l01 := sq1[nmod2][emod]
+		l01 := sq1[nmod][emod2]
 
-		nr := northingIndex - float64(nrest)
+		nr := eastingIndex - float64(erest)
 		elev2 := (float64(l01) * nr +
 			float64(l00) * (1 - nr)) / step
 
 		sq.updateState(elev2, i)
 		emodPrev = emod
 		nmodPrev = nmod
-		nmod2Prev = nmod2
+		emod2Prev = emod2
 	}
 }
 
@@ -185,7 +185,8 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 		sq.stepLength = step / math.Abs(sin)
 		sq.TraceEastWest(t.ElevMap, sign(sin), cos / math.Abs(sin))
 	} else {
-		panic("oops")
+		sq.stepLength = step / math.Abs(cos)
+		sq.TraceNorthSouth(t.ElevMap, sin / math.Abs(cos), sign(cos))
 	}
 
 	return sq.geopixels
