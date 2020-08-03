@@ -46,6 +46,20 @@ func (em ElevationMap) lookup(e indices, n indices) int16 {
 	return ms.Elevations[n.i2][e.i2][n.i1][e.i1]
 }
 
+func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
+	if e < 0 || n < 0 {
+		return -1
+	}
+	n0 := arrayIndices(n)
+	e0 := arrayIndices(e)
+
+	mmapStruct := em.lookupMmapStruct(e0, n0)
+	if mmapStruct == nil {
+		return  -1
+	}
+	return float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / 10
+}
+
 func (em ElevationMap) lookupSquare(e intStep, n intStep) *[25][25]int16 {
 	if e < 0 || n < 0 {
 		return nil

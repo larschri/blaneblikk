@@ -77,14 +77,14 @@ func atBorder(a intStep, b intStep) bool {
 type intStep int
 
 func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
-	totalSteps := intStep(2000000.0 / sq.stepLength)
+	totalSteps := intStep(200_000.0 / sq.stepLength)
 	emodPrev := intStep(10000)
 	nmodPrev := intStep(10000)
 	nmod2Prev := intStep(10000)
-	var sq0 *[25][25]int16
-	var sq1 *[25][25]int16
 	var eastingStart = intStep(sq.easting-elevationMap.minEasting) / 10
 	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
+	var sq0 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)))
+	var sq1 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)) + 1)
 	for i := intStep(1); i < totalSteps; i++ {
 		eastingIndex := eastingStart + i*eastStepSign
 		northingIndex := northingStart - float64(i)*northStepLength
@@ -93,7 +93,29 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		emod := eastingIndex % smallSquareSize
 		nmod := nrest % smallSquareSize
 
-		if atBorder(emodPrev, emod) || atBorder(nmodPrev, nmod) {
+		if atBorder(emodPrev, emod) {
+			dist := float64(i) * sq.stepLength
+			earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
+			elevationLimit := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+
+			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit && elevationMap.maxElevation(eastingIndex, nrest - intStep(northStepLength * 25)) < elevationLimit {
+				i += (smallSquareSize - 1)
+				emodPrev = emod
+				nmodPrev = nmod
+				nmod2Prev = (nrest + 1) % smallSquareSize
+				continue
+			}
+			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
+			if sq0 == nil {
+				break
+			}
+			sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
+			if sq1 == nil {
+				break
+			}
+		}
+
+		if atBorder(nmodPrev, nmod) {
 			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
 			if sq0 == nil {
 				break
@@ -101,7 +123,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		}
 
 		nmod2 := (nrest + 1) % smallSquareSize
-		if atBorder(emodPrev, emod) || atBorder(nmod2Prev, nmod2) {
+		if atBorder(nmod2Prev, nmod2) {
 			sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
 			if sq1 == nil {
 				break
