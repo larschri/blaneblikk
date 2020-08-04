@@ -8,7 +8,16 @@ const (
 	unit = 10
 	bigSquareSize = 5000
 	smallSquareSize = 25
+	maxBlaneDistance = 200_000.0
 )
+
+var atanPrecalc [10 + maxBlaneDistance / unit]float64
+
+func init() {
+	for i := 0; i < len(atanPrecalc); i++ {
+		atanPrecalc[i] = math.Atan2(float64(unit * i) /2, 6371000.0)
+	}
+}
 
 type Geopixel struct {
 	Distance float64
@@ -50,7 +59,7 @@ func sign(i float64) intStep {
 
 func (sq *squareIterator) updateState(elevation float64, i intStep) {
 	dist := float64(i) * sq.stepLength
-	earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
+	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 
 	heightAngle := math.Atan2(elevation - sq.elevation0, dist)
 
@@ -77,7 +86,7 @@ func atBorder(a intStep, b intStep) bool {
 type intStep int
 
 func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
-	totalSteps := intStep(200_000.0 / sq.stepLength)
+	totalSteps := intStep(maxBlaneDistance / sq.stepLength)
 	emodPrev := intStep(10000)
 	nmodPrev := intStep(10000)
 	nmod2Prev := intStep(10000)
@@ -96,7 +105,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 
 		if atBorder(emodPrev, emod) {
 			dist := float64(i) * sq.stepLength
-			earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
+			earthCurvatureAngle := atanPrecalc[int(dist/step)]
 			elevationLimit := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit && elevationMap.maxElevation(eastingIndex, nrest - intStep(northStepLength * 25)) < elevationLimit {
