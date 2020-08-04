@@ -92,6 +92,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 
 		emod := eastingIndex % smallSquareSize
 		nmod := nrest % smallSquareSize
+		nmod2 := (nrest + 1) % smallSquareSize
 
 		if atBorder(emodPrev, emod) {
 			dist := float64(i) * sq.stepLength
@@ -113,20 +114,19 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			if sq1 == nil {
 				break
 			}
-		}
-
-		if atBorder(nmodPrev, nmod) {
-			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
-			if sq0 == nil {
-				break
+		}  else {
+			if atBorder(nmodPrev, nmod) {
+				sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
+				if sq0 == nil {
+					break
+				}
 			}
-		}
 
-		nmod2 := (nrest + 1) % smallSquareSize
-		if atBorder(nmod2Prev, nmod2) {
-			sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
-			if sq1 == nil {
-				break
+			if atBorder(nmod2Prev, nmod2) {
+				sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
+				if sq1 == nil {
+					break
+				}
 			}
 		}
 
