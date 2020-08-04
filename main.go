@@ -6,15 +6,17 @@ import (
 	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"github.com/larschri/blaner/render"
 	"image/png"
+	"log"
 	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"strconv"
 )
 
 var args1 = render.Args{
-	Start:    3.1,
+	Start:    -2.2867,
 	Width:    .1,
 	Columns:  400,
 	Step:     10,
@@ -23,6 +25,17 @@ var args1 = render.Args{
 	HeightAngle: .16,
 	MinHeight:   -.08,
 }
+
+/*var args1 = render.Args{
+	Start:    -2.2867,
+	Width:    .1,
+	Columns:  400,
+	Step:     10,
+	Easting:  463564,
+	Northing: 6833871,
+	HeightAngle: .16,
+	MinHeight:   -.08,
+}*/
 
 var elevmap dataset5000.ElevationMap
 
@@ -71,8 +84,14 @@ func main() {
 			panic(err)
 		}
 	} else {
+		f, err := os.Create("cpuprof")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 		img := render.CreateImage(args1, elevmap)
-		f, _ := os.Create("foo.png")
-		png.Encode(f, img)
+		file, _ := os.Create("foo.png")
+		png.Encode(file, img)
 	}
 }
