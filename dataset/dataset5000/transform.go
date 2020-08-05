@@ -81,15 +81,30 @@ func atBorder(a intStep, b intStep) bool {
 	return b-a > 1 || a < 0
 }
 
+type smallSquareIter struct {
+	front intStep
+	side intStep
+	side2 intStep
+}
+
+func (i *smallSquareIter) init(front intStep, side intStep) {
+	i.front = front % smallSquareSize
+	i.side =  side % smallSquareSize
+	i.side2 = (side + 1) % smallSquareSize
+}
+
 // intStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
 func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign intStep, northStepLength float64) {
 	totalSteps := intStep(maxBlaneDistance / sq.stepLength)
-	emodPrev := intStep(10000)
-	nmodPrev := intStep(10000)
-	nmod2Prev := intStep(10000)
+	prevIter := smallSquareIter{
+		front: 10000,
+		side:  10000,
+		side2: 10000,
+	}
+	var sIter smallSquareIter
 	var eastingStart = intStep(sq.easting-elevationMap.minEasting) / 10
 	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
 	var sq0 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)))
@@ -99,11 +114,9 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		northingIndex := northingStart - float64(i)*northStepLength
 		nrest := intStep(math.Floor(northingIndex))
 
-		emod := eastingIndex % smallSquareSize
-		nmod := nrest % smallSquareSize
-		nmod2 := (nrest + 1) % smallSquareSize
+		sIter.init(eastingIndex, nrest)
 
-		if atBorder(emodPrev, emod) {
+		if atBorder(prevIter.front, sIter.front) {
 			dist := float64(i) * sq.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
 			elevationLimit := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
@@ -113,16 +126,14 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 				eastingIndex = eastingStart + i*eastStepSign
 				northingIndex = northingStart - float64(i)*northStepLength
 				nrest = intStep(math.Floor(northingIndex))
-				emodPrev = eastingIndex % smallSquareSize
-				nmodPrev = nrest % smallSquareSize
-				nmod2Prev = (nrest + 1) % smallSquareSize
+				prevIter.init(eastingIndex, nrest)
 				continue
 			}
 			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
 			if sq0 == nil {
 				break
 			}
-			if nmod2 == 0 {
+			if sIter.side2 == 0 {
 				sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
 				if sq1 == nil {
 					break
@@ -131,8 +142,8 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 				sq1 = sq0
 			}
 		}  else {
-			if atBorder(nmodPrev, nmod) {
-				if nmod == 0 {
+			if atBorder(prevIter.side, sIter.side) {
+				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
 					sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
@@ -142,8 +153,8 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 				}
 			}
 
-			if atBorder(nmod2Prev, nmod2) {
-				if nmod2 == 0 {
+			if atBorder(prevIter.side2, sIter.side2) {
+				if sIter.side2 == 0 {
 					sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
 					if sq1 == nil {
 						break
@@ -154,17 +165,15 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			}
 		}
 
-		l00 := sq0[nmod][emod]
-		l01 := sq1[nmod2][emod]
+		l00 := sq0[sIter.side][sIter.front]
+		l01 := sq1[sIter.side2][sIter.front]
 
 		nr := northingIndex - float64(nrest)
 		elev2 := (float64(l01)*nr +
 			float64(l00)*(1-nr)) / step
 
 		sq.updateState(elev2, i)
-		emodPrev = emod
-		nmodPrev = nmod
-		nmod2Prev = nmod2
+		prevIter = sIter
 	}
 }
 
