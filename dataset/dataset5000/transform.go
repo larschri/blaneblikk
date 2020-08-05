@@ -119,9 +119,12 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		if atBorder(prevIter.front, sIter.front) {
 			dist := float64(i) * sq.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
-			elevationLimit := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := sq.elevation0 + float64(i + smallSquareSize) * sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
-			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit && elevationMap.maxElevation(eastingIndex, nrest - intStep(northStepLength * 25)) < elevationLimit {
+			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
+				elevationMap.maxElevation(eastingIndex, nrest - intStep(northStepLength * 25)) < elevationLimit {
 				i += (smallSquareSize - 1)
 				eastingIndex = eastingStart + i*eastStepSign
 				northingIndex = northingStart - float64(i)*northStepLength
