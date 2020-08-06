@@ -181,48 +181,47 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 }
 
 func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLength float64, northStepSign intStep) {
-	totalSteps := intStep(2000000.0 / sq.stepLength)
-	emodPrev := intStep(10000)
-	nmodPrev := intStep(10000)
-	emod2Prev := intStep(10000)
-	var sq0 *[25][25]int16
-	var sq1 *[25][25]int16
+	totalSteps := intStep(maxBlaneDistance / sq.stepLength)
+	prevIter := smallSquareIter{
+		front: 10000,
+		side:  10000,
+		side2: 10000,
+	}
+	var sIter smallSquareIter
 	var eastingStart = (sq.easting - elevationMap.minEasting) / 10
 	var northingStart = intStep(elevationMap.maxNorthing - sq.northing) / 10
+	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)), northingStart)
+	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)) + 1, northingStart)
 	for i := intStep(1); i < totalSteps; i++ {
 		northingIndex := northingStart - i * northStepSign
 		eastingIndex := eastingStart + float64(i) * eastStepLength
 		erest := intStep(math.Floor(eastingIndex))
 
-		emod := erest % smallSquareSize
-		nmod := northingIndex % smallSquareSize
+		sIter.init(northingIndex, erest)
 
-		if atBorder(emodPrev, emod) || atBorder(nmodPrev, nmod) {
+		if atBorder(prevIter.side, sIter.side2) || atBorder(prevIter.front, sIter.front) {
 			sq0 = elevationMap.lookupSquare(erest, northingIndex)
 			if sq0 == nil {
 				break
 			}
 		}
 
-		emod2 := (erest + 1) % smallSquareSize
-		if atBorder(nmodPrev, nmod) || atBorder(emod2Prev, emod2) {
+		if atBorder(prevIter.front, sIter.front) || atBorder(prevIter.side2, sIter.side2) {
 			sq1 = elevationMap.lookupSquare(erest + 1, northingIndex)
 			if sq1 == nil {
 				break
 			}
 		}
 
-		l00 := sq0[nmod][emod]
-		l01 := sq1[nmod][emod2]
+		l00 := sq0[sIter.front][sIter.side]
+		l01 := sq1[sIter.front][sIter.side2]
 
 		nr := eastingIndex - float64(erest)
 		elev2 := (float64(l01) * nr +
 			float64(l00) * (1 - nr)) / step
 
 		sq.updateState(elev2, i)
-		emodPrev = emod
-		nmodPrev = nmod
-		emod2Prev = emod2
+		prevIter = sIter
 	}
 }
 
