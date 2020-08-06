@@ -25,12 +25,12 @@ func arrayIndices(num intStep) indices {
 	}
 }
 
-func (em ElevationMap) lookupMmapStruct(e indices, n indices) *Mmap5000 {
-	if e.i3 < 0 || e.i3 >= 50 || n.i3 < 0 || n.i3 >= 50 {
+func (em ElevationMap) lookupMmapStruct(e int, n int) *Mmap5000 {
+	if e < 0 || e >= 50 || n < 0 || n >= 50 {
 		return nil
 	}
 
-	return em.mmapStructs[e.i3][n.i3]
+	return em.mmapStructs[e][n]
 }
 
 func (em ElevationMap) lookup(e indices, n indices) int16 {
@@ -53,7 +53,7 @@ func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 	n0 := arrayIndices(n)
 	e0 := arrayIndices(e)
 
-	mmapStruct := em.lookupMmapStruct(e0, n0)
+	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
 	if mmapStruct == nil {
 		return -1
 	}
@@ -67,7 +67,7 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[25][25]int16 {
 	n0 := arrayIndices(n)
 	e0 := arrayIndices(e)
 
-	mmapStruct := em.lookupMmapStruct(e0, n0)
+	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
 	if mmapStruct == nil {
 		return nil
 	}
@@ -88,7 +88,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	n0 := arrayIndices(nrest)
 	e0 := arrayIndices(erest)
 
-	mmapStruct := em.lookupMmapStruct(e0, n0)
+	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
 	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2])/10 < limit {
 		return -1
 	}
