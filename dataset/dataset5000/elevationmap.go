@@ -6,7 +6,7 @@ import (
 )
 
 type ElevationMap struct {
-	minEasting float64
+	minEasting  float64
 	maxNorthing float64
 	mmapStructs [50][50]*Mmap5000
 }
@@ -21,7 +21,7 @@ func arrayIndices(num intStep) indices {
 	return indices{
 		i1: num % 25,
 		i2: int((num / 25) % 200),
-		i3: int(num /5000),
+		i3: int(num / 5000),
 	}
 }
 
@@ -55,7 +55,7 @@ func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 
 	mmapStruct := em.lookupMmapStruct(e0, n0)
 	if mmapStruct == nil {
-		return  -1
+		return -1
 	}
 	return float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / 10
 }
@@ -89,7 +89,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	e0 := arrayIndices(erest)
 
 	mmapStruct := em.lookupMmapStruct(e0, n0)
-	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / 10 < limit {
+	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2])/10 < limit {
 		return -1
 	}
 
@@ -102,7 +102,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	l10 := mmapStruct.Elevations[n0.i2][e1.i2][n0.i1][e1.i1]
 	l11 := mmapStruct.Elevations[n1.i2][e1.i2][n1.i1][e1.i1]
 
-	if nrest / 5000 != (nrest + 1) / 5000 || erest / 5000 != (erest + 1) / 5000 {
+	if nrest/5000 != (nrest+1)/5000 || erest/5000 != (erest+1)/5000 {
 		l00 = em.lookup(e0, n0)
 		l01 = em.lookup(e0, n1)
 		l10 = em.lookup(e1, n0)
@@ -116,17 +116,17 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	er := easting2 - float64(erest)
 	nr := northing2 - float64(nrest)
 
-	return (float64(l11) * er * nr +
-		float64(l10) * er * (1 - nr) +
-		float64(l01) * (1 - er) * nr +
-		float64(l00) * (1 - er) * (1 - nr)) / 10
+	return (float64(l11)*er*nr +
+		float64(l10)*er*(1-nr) +
+		float64(l01)*(1-er)*nr +
+		float64(l00)*(1-er)*(1-nr)) / 10
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
 	mmapStructs := []*Mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
-		maxNorthing: - math.MaxFloat64,
+		maxNorthing: -math.MaxFloat64,
 	}
 
 	for _, fName := range fNames {

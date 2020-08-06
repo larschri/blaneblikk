@@ -5,17 +5,17 @@ import (
 )
 
 const (
-	unit = 10
-	bigSquareSize = 5000
-	smallSquareSize = 25
+	unit             = 10
+	bigSquareSize    = 5000
+	smallSquareSize  = 25
 	maxBlaneDistance = 200_000.0
 )
 
-var atanPrecalc [10 + maxBlaneDistance / unit]float64
+var atanPrecalc [10 + maxBlaneDistance/unit]float64
 
 func init() {
 	for i := 0; i < len(atanPrecalc); i++ {
-		atanPrecalc[i] = math.Atan2(float64(unit * i) /2, 6371000.0)
+		atanPrecalc[i] = math.Atan2(float64(unit*i)/2, 6371000.0)
 	}
 }
 
@@ -38,8 +38,8 @@ const totalHeightAngle float64 = 0.16
 type squareIterator struct {
 	stepLength float64
 
-	easting         float64
-	northing        float64
+	easting  float64
+	northing float64
 
 	//
 	geopixels       []Geopixel
@@ -61,14 +61,14 @@ func (sq *squareIterator) updateState(elevation float64, i intStep) {
 	dist := float64(i) * sq.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 
-	heightAngle := math.Atan2(elevation - sq.elevation0, dist)
+	heightAngle := math.Atan2(elevation-sq.elevation0, dist)
 
-	for sq.currHeightAngle + earthCurvatureAngle <= heightAngle {
+	for sq.currHeightAngle+earthCurvatureAngle <= heightAngle {
 		sq.geopixels = append(sq.geopixels, Geopixel{
 			Distance: dist,
 			Incline:  (elevation - sq.prevElevation) * step / sq.stepLength,
 		})
-		sq.currHeightAngle = float64(len(sq.geopixels)) * totalHeightAngle / float64(sq.geopixelLen) + bottomHeightAngle
+		sq.currHeightAngle = float64(len(sq.geopixels))*totalHeightAngle/float64(sq.geopixelLen) + bottomHeightAngle
 	}
 	sq.prevElevation = elevation
 }
@@ -83,13 +83,13 @@ func atBorder(a intStep, b intStep) bool {
 
 type smallSquareIter struct {
 	front intStep
-	side intStep
+	side  intStep
 	side2 intStep
 }
 
 func (i *smallSquareIter) init(front intStep, side intStep) {
 	i.front = front % smallSquareSize
-	i.side =  side % smallSquareSize
+	i.side = side % smallSquareSize
 	i.side2 = (side + 1) % smallSquareSize
 }
 
@@ -108,7 +108,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 	var eastingStart = intStep(sq.easting-elevationMap.minEasting) / 10
 	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
 	var sq0 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)))
-	var sq1 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)) + 1)
+	var sq1 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart))+1)
 	for i := intStep(1); i < totalSteps; i++ {
 		eastingIndex := eastingStart + i*eastStepSign
 		northingIndex := northingStart - float64(i)*northStepLength
@@ -120,11 +120,11 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			dist := float64(i) * sq.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
 			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := sq.elevation0 + float64(i + smallSquareSize) * sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := sq.elevation0 + float64(i+smallSquareSize)*sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
-				elevationMap.maxElevation(eastingIndex, nrest - intStep(northStepLength * 25)) < elevationLimit {
+				elevationMap.maxElevation(eastingIndex, nrest-intStep(northStepLength*25)) < elevationLimit {
 				i += (smallSquareSize - 1)
 				eastingIndex = eastingStart + i*eastStepSign
 				northingIndex = northingStart - float64(i)*northStepLength
@@ -144,7 +144,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			} else {
 				sq1 = sq0
 			}
-		}  else {
+		} else {
 			if atBorder(prevIter.side, sIter.side) {
 				if sIter.side == 0 {
 					sq0 = sq1
@@ -189,12 +189,12 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 	}
 	var sIter smallSquareIter
 	var eastingStart = (sq.easting - elevationMap.minEasting) / 10
-	var northingStart = intStep(elevationMap.maxNorthing - sq.northing) / 10
+	var northingStart = intStep(elevationMap.maxNorthing-sq.northing) / 10
 	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)), northingStart)
-	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)) + 1, northingStart)
+	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart))+1, northingStart)
 	for i := intStep(1); i < totalSteps; i++ {
-		northingIndex := northingStart - i * northStepSign
-		eastingIndex := eastingStart + float64(i) * eastStepLength
+		northingIndex := northingStart - i*northStepSign
+		eastingIndex := eastingStart + float64(i)*eastStepLength
 		erest := intStep(math.Floor(eastingIndex))
 
 		sIter.init(northingIndex, erest)
@@ -203,13 +203,13 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 			dist := float64(i) * sq.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
 			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := sq.elevation0 + float64(i + smallSquareSize) * sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := sq.elevation0 + float64(i+smallSquareSize)*sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
-				elevationMap.maxElevation(erest + intStep(eastStepLength * 25), northingIndex) < elevationLimit {//?
+				elevationMap.maxElevation(erest+intStep(eastStepLength*25), northingIndex) < elevationLimit { //?
 				i += (smallSquareSize - 1)
-				northingIndex = northingStart - i * northStepSign
+				northingIndex = northingStart - i*northStepSign
 				eastingIndex = eastingStart + float64(i)*eastStepLength
 				erest = intStep(math.Floor(eastingIndex))
 				prevIter.init(northingIndex, erest)
@@ -220,14 +220,14 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.lookupSquare(erest + 1, northingIndex)
+				sq1 = elevationMap.lookupSquare(erest+1, northingIndex)
 				if sq1 == nil {
 					break
 				}
 			} else {
 				sq1 = sq0
 			}
-		}  else {
+		} else {
 			if atBorder(prevIter.side, sIter.side) {
 				if sIter.side == 0 {
 					sq0 = sq1
@@ -255,8 +255,8 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 		l01 := sq1[sIter.front][sIter.side2]
 
 		nr := eastingIndex - float64(erest)
-		elev2 := (float64(l01) * nr +
-			float64(l00) * (1 - nr)) / step
+		elev2 := (float64(l01)*nr +
+			float64(l00)*(1-nr)) / step
 
 		sq.updateState(elev2, i)
 		prevIter = sIter
@@ -265,8 +265,8 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
 	var sq squareIterator
-	sq.northing = float64(int(t.Northing) / 10) * 10
-	sq.easting = float64(int(t.Easting) / 10) * 10
+	sq.northing = float64(int(t.Northing)/10) * 10
+	sq.easting = float64(int(t.Easting)/10) * 10
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
@@ -278,10 +278,10 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 
 	if math.Abs(sin) > math.Abs(cos) {
 		sq.stepLength = step / math.Abs(sin)
-		sq.TraceEastWest(t.ElevMap, sign(sin), cos / math.Abs(sin))
+		sq.TraceEastWest(t.ElevMap, sign(sin), cos/math.Abs(sin))
 	} else {
 		sq.stepLength = step / math.Abs(cos)
-		sq.TraceNorthSouth(t.ElevMap, sin / math.Abs(cos), sign(cos))
+		sq.TraceNorthSouth(t.ElevMap, sin/math.Abs(cos), sign(cos))
 	}
 
 	return sq.geopixels
@@ -297,17 +297,16 @@ func (t Transform) TraceDirectionPlain(rad float64, elevation0 float64) []Geopix
 		earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
 		elevation := t.ElevMap.GetElevation(t.Easting+sin*dist, t.Northing+cos*dist, 0)
 
-		heightAngle := math.Atan2(elevation - elevation0, dist)
+		heightAngle := math.Atan2(elevation-elevation0, dist)
 
-		for currHeightAngle + earthCurvatureAngle <= heightAngle {
+		for currHeightAngle+earthCurvatureAngle <= heightAngle {
 			geopixels = append(geopixels, Geopixel{
 				Distance: dist,
 				Incline:  (elevation - prevElevation),
 			})
-			currHeightAngle = float64(len(geopixels)) * totalHeightAngle / float64(t.GeopixelLen) + bottomHeightAngle
+			currHeightAngle = float64(len(geopixels))*totalHeightAngle/float64(t.GeopixelLen) + bottomHeightAngle
 		}
 		prevElevation = elevation
 	}
 	return geopixels
 }
-

@@ -62,4 +62,3 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 	}
 	return img
 }
-

@@ -11,8 +11,8 @@ import (
 
 // Mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
 type Mmap5000 struct {
-	EastingMin float64
-	NorthingMax float64
+	EastingMin    float64
+	NorthingMax   float64
 	MaxElevations [200][200]int16
 
 	// Elvations is a matrix of elevation matrices.
@@ -41,9 +41,9 @@ func toMmapStruct(buf [][]float32) *Mmap5000 {
 			// The loops below _includes_ the 25th element to compute MaxElevations.
 			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
 			for m := 0; m <= 25; m++ {
-				row := i * 25 + m
+				row := i*25 + m
 				for n := 0; n <= 25; n++ {
-					col := j * 25 + n
+					col := j*25 + n
 
 					floatval := buf[row][col]
 					intval := int16(math.Round(10 * float64(floatval)))
@@ -107,4 +107,3 @@ func openMmapped(fname string) (*Mmap5000, error) {
 	}
 	return (*Mmap5000)(unsafe.Pointer(&data[0])), nil
 }
-

@@ -34,7 +34,7 @@ func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64,
 	}
 
 	var gdalTransformArray [6]float64
-	if C.GDALGetGeoTransform(ds, (*C.double) (&gdalTransformArray[0])) != C.CE_None {
+	if C.GDALGetGeoTransform(ds, (*C.double)(&gdalTransformArray[0])) != C.CE_None {
 		panic("failed to run transform")
 	}
 	if gdalTransformArray[1] != 10 || gdalTransformArray[5] != -10 {
@@ -48,7 +48,7 @@ func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64,
 		panic("")
 	}
 
-	buf := make([]float32, xsize * ysize)
+	buf := make([]float32, xsize*ysize)
 	band := C.GDALGetRasterBand(ds, 1)
 	if C.GDALRasterIO(band, C.GF_Read, 0, 0, xsize, ysize, unsafe.Pointer(&buf[0]), xsize, ysize, C.GDT_Float32, 0, 0) != C.CE_None {
 		panic("failed to read elevation buffer from file")
@@ -56,7 +56,7 @@ func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64,
 
 	// Input files are not aligned to the same global 10x10 matrix.
 	// Offsets below are 205 for most files, but 210 and 215 for some
-	eastingOffset := 1000 - int(gdalTransformArray[0]) % 1000
+	eastingOffset := 1000 - int(gdalTransformArray[0])%1000
 	northingOffset := int(gdalTransformArray[3]) % 1000
 	colOffset := eastingOffset / 10
 	rowOffset := northingOffset / 10
@@ -64,7 +64,7 @@ func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64,
 	minEasting = gdalTransformArray[0] + float64(eastingOffset)
 	maxNorthing = gdalTransformArray[3] - float64(northingOffset)
 	for i := 0; i < 5001; i++ {
-		offset := colOffset + (i + rowOffset) * int(xsize)
+		offset := colOffset + (i+rowOffset)*int(xsize)
 		buffer = append(buffer, buf[offset:offset+5001])
 	}
 	return

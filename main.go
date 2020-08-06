@@ -16,12 +16,12 @@ import (
 )
 
 var args1 = render.Args{
-	Start:    -2.2867,
-	Width:    .1,
-	Columns:  400,
-	Step:     10,
-	Easting:  463561,
-	Northing: 6833871,
+	Start:       -2.2867,
+	Width:       .1,
+	Columns:     400,
+	Step:        10,
+	Easting:     463561,
+	Northing:    6833871,
 	HeightAngle: .16,
 	MinHeight:   -.08,
 }
