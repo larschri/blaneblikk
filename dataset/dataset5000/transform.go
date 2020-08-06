@@ -124,7 +124,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
-				elevationMap.maxElevation(eastingIndex, nrest-intStep(northStepLength*25)) < elevationLimit {
+				elevationMap.maxElevation(eastingIndex, nrest-intStep(northStepLength*smallSquareSize)) < elevationLimit {
 				i += (smallSquareSize - 1)
 				eastingIndex = eastingStart + i*eastStepSign
 				northingIndex = northingStart - float64(i)*northStepLength
@@ -207,7 +207,7 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
-				elevationMap.maxElevation(erest+intStep(eastStepLength*25), northingIndex) < elevationLimit { //?
+				elevationMap.maxElevation(erest+intStep(eastStepLength*smallSquareSize), northingIndex) < elevationLimit { //?
 				i += (smallSquareSize - 1)
 				northingIndex = northingStart - i*northStepSign
 				eastingIndex = eastingStart + float64(i)*eastStepLength
