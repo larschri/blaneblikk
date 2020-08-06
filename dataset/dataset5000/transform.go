@@ -199,17 +199,55 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 
 		sIter.init(northingIndex, erest)
 
-		if atBorder(prevIter.side, sIter.side2) || atBorder(prevIter.front, sIter.front) {
+		if atBorder(prevIter.front, sIter.front) {
+			dist := float64(i) * sq.stepLength
+			earthCurvatureAngle := atanPrecalc[int(dist/step)]
+			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := sq.elevation0 + float64(i + smallSquareSize) * sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
+
+			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
+				elevationMap.maxElevation(erest + intStep(eastStepLength * 25), northingIndex) < elevationLimit {//?
+				i += (smallSquareSize - 1)
+				northingIndex = northingStart - i * northStepSign
+				eastingIndex = eastingStart + float64(i)*eastStepLength
+				erest = intStep(math.Floor(eastingIndex))
+				prevIter.init(northingIndex, erest)
+				continue
+			}
 			sq0 = elevationMap.lookupSquare(erest, northingIndex)
 			if sq0 == nil {
 				break
 			}
-		}
+			if sIter.side2 == 0 {
+				sq1 = elevationMap.lookupSquare(erest + 1, northingIndex)
+				if sq1 == nil {
+					break
+				}
+			} else {
+				sq1 = sq0
+			}
+		}  else {
+			if atBorder(prevIter.side, sIter.side) {
+				if sIter.side == 0 {
+					sq0 = sq1
+				} else {
+					sq0 = elevationMap.lookupSquare(erest, northingIndex)
+					if sq0 == nil {
+						break
+					}
+				}
+			}
 
-		if atBorder(prevIter.front, sIter.front) || atBorder(prevIter.side2, sIter.side2) {
-			sq1 = elevationMap.lookupSquare(erest + 1, northingIndex)
-			if sq1 == nil {
-				break
+			if atBorder(prevIter.side2, sIter.side2) {
+				if sIter.side2 == 0 {
+					sq1 = elevationMap.lookupSquare(erest+1, northingIndex)
+					if sq1 == nil {
+						break
+					}
+				} else {
+					sq1 = sq0
+				}
 			}
 		}
 
