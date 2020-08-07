@@ -64,15 +64,12 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[25][25]int16 {
 	if e < 0 || n < 0 {
 		return nil
 	}
-	n0 := arrayIndices(n)
-	e0 := arrayIndices(e)
 
-	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
+	mmapStruct := em.lookupMmapStruct(int(e / 5000), int(n / 5000))
 	if mmapStruct == nil {
 		return nil
 	}
-
-	return &mmapStruct.Elevations[n0.i2][e0.i2]
+	return &mmapStruct.Elevations[int((n/25) % 200)][int((e/25) % 200)]
 }
 
 func (em ElevationMap) GetElevation(easting float64, northing float64, limit float64) float64 {
