@@ -105,8 +105,8 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var eastingStart = intStep(sq.easting-elevationMap.minEasting) / 10
-	var northingStart = (elevationMap.maxNorthing - sq.northing) / 10
+	var eastingStart = intStep(sq.easting-elevationMap.minEasting) / unit
+	var northingStart = (elevationMap.maxNorthing - sq.northing) / unit
 	var sq0 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart)))
 	var sq1 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart))+1)
 	for i := intStep(1); i < totalSteps; i++ {
@@ -188,8 +188,8 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var eastingStart = (sq.easting - elevationMap.minEasting) / 10
-	var northingStart = intStep(elevationMap.maxNorthing-sq.northing) / 10
+	var eastingStart = (sq.easting - elevationMap.minEasting) / unit
+	var northingStart = intStep(elevationMap.maxNorthing-sq.northing) / unit
 	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)), northingStart)
 	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart))+1, northingStart)
 	for i := intStep(1); i < totalSteps; i++ {
@@ -265,8 +265,8 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 
 func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
 	var sq squareIterator
-	sq.northing = float64(int(t.Northing)/10) * 10
-	sq.easting = float64(int(t.Easting)/10) * 10
+	sq.northing = float64(int(t.Northing)/unit) * unit
+	sq.easting = float64(int(t.Easting)/unit) * unit
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
