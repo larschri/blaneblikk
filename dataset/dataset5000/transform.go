@@ -9,13 +9,14 @@ const (
 	bigSquareSize    = 5000
 	smallSquareSize  = 25
 	maxBlaneDistance = 200_000.0
+	earthRadius      = 6_371_000.0
 )
 
 var atanPrecalc [10 + maxBlaneDistance/unit]float64
 
 func init() {
 	for i := 0; i < len(atanPrecalc); i++ {
-		atanPrecalc[i] = math.Atan2(float64(unit*i)/2, 6371000.0)
+		atanPrecalc[i] = math.Atan2(float64(unit*i)/2, earthRadius)
 	}
 }
 
