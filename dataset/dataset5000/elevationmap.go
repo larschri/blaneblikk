@@ -19,9 +19,9 @@ type indices struct {
 
 func arrayIndices(num intStep) indices {
 	return indices{
-		i1: num % 25,
-		i2: int((num / 25) % 200),
-		i3: int(num / 5000),
+		i1: num % smallSquareSize,
+		i2: int((num / smallSquareSize) % (bigSquareSize / smallSquareSize)),
+		i3: int(num / bigSquareSize),
 	}
 }
 
@@ -57,24 +57,24 @@ func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 	if mmapStruct == nil {
 		return -1
 	}
-	return float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / 10
+	return float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / unit
 }
 
-func (em ElevationMap) lookupSquare(e intStep, n intStep) *[25][25]int16 {
+func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][smallSquareSize]int16 {
 	if e < 0 || n < 0 {
 		return nil
 	}
 
-	mmapStruct := em.lookupMmapStruct(int(e / 5000), int(n / 5000))
+	mmapStruct := em.lookupMmapStruct(int(e / bigSquareSize), int(n / bigSquareSize))
 	if mmapStruct == nil {
 		return nil
 	}
-	return &mmapStruct.Elevations[int((n/25) % 200)][int((e/25) % 200)]
+	return &mmapStruct.Elevations[int((n/smallSquareSize) % numberOfSmallSquares)][int((e/smallSquareSize) % numberOfSmallSquares)]
 }
 
 func (em ElevationMap) GetElevation(easting float64, northing float64, limit float64) float64 {
-	easting2 := (easting - em.minEasting) / 10
-	northing2 := (em.maxNorthing - northing) / 10
+	easting2 := (easting - em.minEasting) / unit
+	northing2 := (em.maxNorthing - northing) / unit
 	erest := intStep(math.Floor(easting2))
 	nrest := intStep(math.Floor(northing2))
 
@@ -86,7 +86,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	e0 := arrayIndices(erest)
 
 	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
-	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2])/10 < limit {
+	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2])/unit < limit {
 		return -1
 	}
 
@@ -99,7 +99,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	l10 := mmapStruct.Elevations[n0.i2][e1.i2][n0.i1][e1.i1]
 	l11 := mmapStruct.Elevations[n1.i2][e1.i2][n1.i1][e1.i1]
 
-	if nrest/5000 != (nrest+1)/5000 || erest/5000 != (erest+1)/5000 {
+	if nrest/bigSquareSize != (nrest+1)/bigSquareSize || erest/bigSquareSize != (erest+1)/bigSquareSize {
 		l00 = em.lookup(e0, n0)
 		l01 = em.lookup(e0, n1)
 		l10 = em.lookup(e1, n0)
@@ -116,7 +116,7 @@ func (em ElevationMap) GetElevation(easting float64, northing float64, limit flo
 	return (float64(l11)*er*nr +
 		float64(l10)*er*(1-nr) +
 		float64(l01)*(1-er)*nr +
-		float64(l00)*(1-er)*(1-nr)) / 10
+		float64(l00)*(1-er)*(1-nr)) / unit
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
@@ -138,8 +138,8 @@ func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, erro
 		mmapStructs = append(mmapStructs, mmapStruct)
 	}
 	for _, mmapStruct := range mmapStructs {
-		x := (int(mmapStruct.EastingMin) - int(allElevations.minEasting)) / 50000
-		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / 50000
+		x := (int(mmapStruct.EastingMin) - int(allElevations.minEasting)) / (bigSquareSize * unit)
+		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / (bigSquareSize * unit)
 		allElevations.mmapStructs[x][y] = mmapStruct
 	}
 	for _, xx := range allElevations.mmapStructs {

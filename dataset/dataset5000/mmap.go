@@ -9,17 +9,19 @@ import (
 	"unsafe"
 )
 
+const numberOfSmallSquares = bigSquareSize / smallSquareSize
+
 // Mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
 type Mmap5000 struct {
 	EastingMin    float64
 	NorthingMax   float64
-	MaxElevations [200][200]int16
+	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]int16
 
 	// Elvations is a matrix of elevation matrices.
 	// An elevation data point is a int16 where a unit corresponds to 0.1 meter of elevation
 	// An elevation matrix contains 25x25 such elevation data points
 	// This matrix contains 200x200 such elevation matrices.
-	Elevations [200][200][25][25]int16
+	Elevations [numberOfSmallSquares][numberOfSmallSquares][smallSquareSize][smallSquareSize]int16
 }
 
 type DatasetReader interface {
@@ -36,19 +38,19 @@ func toMmapStruct(buf [][]float32) *Mmap5000 {
 
 	result := Mmap5000{}
 
-	for i := 0; i < 200; i++ {
-		for j := 0; j < 200; j++ {
+	for i := 0; i < numberOfSmallSquares; i++ {
+		for j := 0; j < numberOfSmallSquares; j++ {
 			// The loops below _includes_ the 25th element to compute MaxElevations.
 			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
-			for m := 0; m <= 25; m++ {
-				row := i*25 + m
-				for n := 0; n <= 25; n++ {
-					col := j*25 + n
+			for m := 0; m <= smallSquareSize; m++ {
+				row := i*smallSquareSize + m
+				for n := 0; n <= smallSquareSize; n++ {
+					col := j*smallSquareSize + n
 
 					floatval := buf[row][col]
-					intval := int16(math.Round(10 * float64(floatval)))
+					intval := int16(math.Round(unit * float64(floatval)))
 
-					if m < 25 && n < 25 {
+					if m < smallSquareSize && n < smallSquareSize {
 						result.Elevations[i][j][m][n] = intval
 					}
 
