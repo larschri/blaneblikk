@@ -7,7 +7,7 @@ import (
 const (
 	unit             = 10
 	bigSquareSize    = 5000
-	smallSquareSize  = 25
+	smallSquareSize  = 200
 	maxBlaneDistance = 200_000.0
 	earthRadius      = 6_371_000.0
 )
