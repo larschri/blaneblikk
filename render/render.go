@@ -41,7 +41,7 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
-		geopixels := trans2.TraceDirectionExperimental(rad, elevation0)
+		geopixels := trans2.TraceDirection(rad, elevation0)
 
 		len := len(geopixels)
 		if len > geopixelLen {

@@ -264,10 +264,10 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 	}
 }
 
-func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) []Geopixel {
+func (t Transform) TraceDirection(rad float64, elevation0 float64) []Geopixel {
 	var sq squareIterator
-	sq.northing = float64(int(t.Northing)/unit) * unit
-	sq.easting = float64(int(t.Easting)/unit) * unit
+	sq.northing = math.Round(t.Northing/unit) * unit
+	sq.easting = math.Round(t.Easting/unit) * unit
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
 	sq.prevElevation = elevation0
@@ -286,28 +286,4 @@ func (t Transform) TraceDirectionExperimental(rad float64, elevation0 float64) [
 	}
 
 	return sq.geopixels
-}
-
-func (t Transform) TraceDirectionPlain(rad float64, elevation0 float64) []Geopixel {
-	geopixels := make([]Geopixel, 0)
-	sin := math.Sin(rad)
-	cos := math.Cos(rad)
-	currHeightAngle := bottomHeightAngle
-	prevElevation := elevation0
-	for dist := step; dist < 200000; dist = dist + step {
-		earthCurvatureAngle := math.Atan2(dist/2, 6371000.0)
-		elevation := t.ElevMap.GetElevation(t.Easting+sin*dist, t.Northing+cos*dist, 0)
-
-		heightAngle := math.Atan2(elevation-elevation0, dist)
-
-		for currHeightAngle+earthCurvatureAngle <= heightAngle {
-			geopixels = append(geopixels, Geopixel{
-				Distance: dist,
-				Incline:  (elevation - prevElevation),
-			})
-			currHeightAngle = float64(len(geopixels))*totalHeightAngle/float64(t.GeopixelLen) + bottomHeightAngle
-		}
-		prevElevation = elevation
-	}
-	return geopixels
 }
