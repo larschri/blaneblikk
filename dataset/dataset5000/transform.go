@@ -54,7 +54,7 @@ func (s floatStepper) step(i intStep) float64 {
 	return s.start + float64(i) * s.stepLen
 }
 
-type squareIterator struct {
+type geoPixelBuilder struct {
 	stepLength float64
 
 	//
@@ -73,20 +73,20 @@ func sign(i float64) intStep {
 	}
 }
 
-func (sq *squareIterator) updateState(elevation float64, i intStep) {
-	dist := float64(i) * sq.stepLength
+func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
+	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 
-	heightAngle := math.Atan2(elevation-sq.elevation0, dist)
+	heightAngle := math.Atan2(elevation-bld.elevation0, dist)
 
-	for sq.currHeightAngle+earthCurvatureAngle <= heightAngle {
-		sq.geopixels = append(sq.geopixels, Geopixel{
+	for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
+		bld.geopixels = append(bld.geopixels, Geopixel{
 			Distance: dist,
-			Incline:  (elevation - sq.prevElevation) * step / sq.stepLength,
+			Incline:  (elevation - bld.prevElevation) * step / bld.stepLength,
 		})
-		sq.currHeightAngle = float64(len(sq.geopixels))*totalHeightAngle/float64(sq.geopixelLen) + bottomHeightAngle
+		bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
 	}
-	sq.prevElevation = elevation
+	bld.prevElevation = elevation
 }
 
 func atBorder(a intStep, b intStep) bool {
@@ -113,8 +113,8 @@ func (i *smallSquareIter) init(front intStep, side intStep) {
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
-func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
-	totalSteps := intStep(maxBlaneDistance / sq.stepLength)
+func (bld *geoPixelBuilder) TraceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
+	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	prevIter := smallSquareIter{
 		front: 10000,
 		side:  10000,
@@ -131,10 +131,10 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepper i
 		sIter.init(eastingIndex, nrest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			dist := float64(i) * sq.stepLength
+			dist := float64(i) * bld.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
-			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := sq.elevation0 + float64(i+smallSquareSize)*sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit1 := bld.elevation0 + dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := bld.elevation0 + float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
@@ -189,13 +189,13 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepper i
 		elev2 := (float64(l01)*nr +
 			float64(l00)*(1-nr)) * elevation16Unit
 
-		sq.updateState(elev2, i)
+		bld.updateState(elev2, i)
 		prevIter = sIter
 	}
 }
 
-func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
-	totalSteps := intStep(maxBlaneDistance / sq.stepLength)
+func (bld *geoPixelBuilder) TraceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
+	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	prevIter := smallSquareIter{
 		front: 10000,
 		side:  10000,
@@ -212,10 +212,10 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepper
 		sIter.init(northingIndex, erest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			dist := float64(i) * sq.stepLength
+			dist := float64(i) * bld.stepLength
 			earthCurvatureAngle := atanPrecalc[int(dist/step)]
-			elevationLimit1 := sq.elevation0 + dist*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := sq.elevation0 + float64(i+smallSquareSize)*sq.stepLength*math.Tan(sq.currHeightAngle+earthCurvatureAngle)
+			elevationLimit1 := bld.elevation0 + dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+			elevationLimit2 := bld.elevation0 + float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
@@ -270,13 +270,13 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepper
 		elev2 := (float64(l01)*nr +
 			float64(l00)*(1-nr)) * elevation16Unit
 
-		sq.updateState(elev2, i)
+		bld.updateState(elev2, i)
 		prevIter = sIter
 	}
 }
 
 func (t Transform) TraceDirection(rad float64) []Geopixel {
-	var sq squareIterator
+	var bld geoPixelBuilder
 
 	northing0 := math.Round(t.Northing/unit) * unit
 	easting0 := math.Round(t.Easting/unit) * unit
@@ -284,18 +284,18 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	var eastingStart = intStep(easting0-t.ElevMap.minEasting) / unit
 	var northingStart = intStep(t.ElevMap.maxNorthing-northing0) / unit
 
-	sq.geopixels = make([]Geopixel, 0)
-	sq.currHeightAngle = bottomHeightAngle
-	sq.prevElevation = t.ElevMap.elevation(intStep(easting0), intStep(northing0))
-	sq.elevation0 = sq.prevElevation + 10
-	sq.geopixelLen = t.GeopixelLen
+	bld.geopixels = make([]Geopixel, 0)
+	bld.currHeightAngle = bottomHeightAngle
+	bld.prevElevation = t.ElevMap.elevation(intStep(easting0), intStep(northing0))
+	bld.elevation0 = bld.prevElevation + 10
+	bld.geopixelLen = t.GeopixelLen
 
 	sin := math.Sin(rad) // east
 	cos := math.Cos(rad) // north
 
 	if math.Abs(sin) > math.Abs(cos) {
-		sq.stepLength = step / math.Abs(sin)
-		sq.TraceEastWest(t.ElevMap,
+		bld.stepLength = step / math.Abs(sin)
+		bld.TraceEastWest(t.ElevMap,
 			intStepper{
 				start: eastingStart,
 				stepLen: sign(sin),
@@ -305,8 +305,8 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 				stepLen: -cos/math.Abs(sin),
 			})
 	} else {
-		sq.stepLength = step / math.Abs(cos)
-		sq.TraceNorthSouth(t.ElevMap,
+		bld.stepLength = step / math.Abs(cos)
+		bld.TraceNorthSouth(t.ElevMap,
 			floatStepper{
 				start: float64(eastingStart),
 				stepLen: sin/math.Abs(cos),
@@ -317,5 +317,5 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 			})
 	}
 
-	return sq.geopixels
+	return bld.geopixels
 }
