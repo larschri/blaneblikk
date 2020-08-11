@@ -112,7 +112,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 	var sq1 = elevationMap.lookupSquare(eastingStart, intStep(math.Floor(northingStart))+1)
 	for i := intStep(1); i < totalSteps; i++ {
 		eastingIndex := eastingStart + i*eastStepSign
-		northingIndex := northingStart - float64(i)*northStepLength
+		northingIndex := northingStart + float64(i)*northStepLength
 		nrest := intStep(math.Floor(northingIndex))
 
 		sIter.init(eastingIndex, nrest)
@@ -125,10 +125,10 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
-				elevationMap.maxElevation(eastingIndex, nrest-intStep(northStepLength*smallSquareSize)) < elevationLimit {
+				elevationMap.maxElevation(eastingIndex, nrest+intStep(northStepLength*smallSquareSize)) < elevationLimit {
 				i += (smallSquareSize - 1)
 				eastingIndex = eastingStart + i*eastStepSign
-				northingIndex = northingStart - float64(i)*northStepLength
+				northingIndex = northingStart + float64(i)*northStepLength
 				nrest = intStep(math.Floor(northingIndex))
 				prevIter.init(eastingIndex, nrest)
 				continue
@@ -194,7 +194,7 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart)), northingStart)
 	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastingStart))+1, northingStart)
 	for i := intStep(1); i < totalSteps; i++ {
-		northingIndex := northingStart - i*northStepSign
+		northingIndex := northingStart + i*northStepSign
 		eastingIndex := eastingStart + float64(i)*eastStepLength
 		erest := intStep(math.Floor(eastingIndex))
 
@@ -210,7 +210,7 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
 				elevationMap.maxElevation(erest+intStep(eastStepLength*smallSquareSize), northingIndex) < elevationLimit { //?
 				i += (smallSquareSize - 1)
-				northingIndex = northingStart - i*northStepSign
+				northingIndex = northingStart + i*northStepSign
 				eastingIndex = eastingStart + float64(i)*eastStepLength
 				erest = intStep(math.Floor(eastingIndex))
 				prevIter.init(northingIndex, erest)
@@ -279,10 +279,10 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 
 	if math.Abs(sin) > math.Abs(cos) {
 		sq.stepLength = step / math.Abs(sin)
-		sq.TraceEastWest(t.ElevMap, sign(sin), cos/math.Abs(sin))
+		sq.TraceEastWest(t.ElevMap, sign(sin), -cos/math.Abs(sin))
 	} else {
 		sq.stepLength = step / math.Abs(cos)
-		sq.TraceNorthSouth(t.ElevMap, sin/math.Abs(cos), sign(cos))
+		sq.TraceNorthSouth(t.ElevMap, sin/math.Abs(cos), -sign(cos))
 	}
 
 	return sq.geopixels
