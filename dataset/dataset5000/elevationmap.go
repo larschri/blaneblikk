@@ -72,51 +72,22 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][sma
 	return &mmapStruct.Elevations[int((n/smallSquareSize) % numberOfSmallSquares)][int((e/smallSquareSize) % numberOfSmallSquares)]
 }
 
-func (em ElevationMap) GetElevation(easting float64, northing float64, limit float64) float64 {
-	easting2 := (easting - em.minEasting) / unit
-	northing2 := (em.maxNorthing - northing) / unit
-	erest := intStep(math.Floor(easting2))
-	nrest := intStep(math.Floor(northing2))
+func (em ElevationMap) elevation(easting intStep, northing intStep) float64 {
+	easting2 := (easting - intStep(em.minEasting)) / unit
+	northing2 := (intStep(em.maxNorthing) - northing) / unit
 
-	if erest < 0 || nrest < 0 {
+	if easting2 < 0 || northing2 < 0 {
 		return -1
 	}
 
-	n0 := arrayIndices(nrest)
-	e0 := arrayIndices(erest)
+	n0 := arrayIndices(northing2)
+	e0 := arrayIndices(easting2)
 
 	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
-	if mmapStruct == nil || float64(mmapStruct.MaxElevations[n0.i2][e0.i2])/unit < limit {
+	if mmapStruct == nil {
 		return -1
 	}
-
-	n1 := arrayIndices(nrest + 1)
-	e1 := arrayIndices(erest + 1)
-
-	// Optimisation, assume the same mmapStruct for all corners
-	l00 := mmapStruct.Elevations[n0.i2][e0.i2][n0.i1][e0.i1]
-	l01 := mmapStruct.Elevations[n1.i2][e0.i2][n1.i1][e0.i1]
-	l10 := mmapStruct.Elevations[n0.i2][e1.i2][n0.i1][e1.i1]
-	l11 := mmapStruct.Elevations[n1.i2][e1.i2][n1.i1][e1.i1]
-
-	if nrest/bigSquareSize != (nrest+1)/bigSquareSize || erest/bigSquareSize != (erest+1)/bigSquareSize {
-		l00 = em.lookup(e0, n0)
-		l01 = em.lookup(e0, n1)
-		l10 = em.lookup(e1, n0)
-		l11 = em.lookup(e1, n1)
-	}
-
-	if l00 == -1 || l01 == -1 || l10 == -1 || l11 == -1 {
-		return -1
-	}
-
-	er := easting2 - float64(erest)
-	nr := northing2 - float64(nrest)
-
-	return (float64(l11)*er*nr +
-		float64(l10)*er*(1-nr) +
-		float64(l01)*(1-er)*nr +
-		float64(l00)*(1-er)*(1-nr)) / unit
+	return float64(mmapStruct.Elevations[n0.i2][e0.i2][n0.i1][e0.i1]) * elevation16Unit
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {

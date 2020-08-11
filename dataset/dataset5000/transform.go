@@ -174,7 +174,7 @@ func (sq *squareIterator) TraceEastWest(elevationMap ElevationMap, eastStepSign 
 
 		nr := northingIndex - float64(nrest)
 		elev2 := (float64(l01)*nr +
-			float64(l00)*(1-nr)) / step
+			float64(l00)*(1-nr)) * elevation16Unit
 
 		sq.updateState(elev2, i)
 		prevIter = sIter
@@ -264,14 +264,14 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 	}
 }
 
-func (t Transform) TraceDirection(rad float64, elevation0 float64) []Geopixel {
+func (t Transform) TraceDirection(rad float64) []Geopixel {
 	var sq squareIterator
 	sq.northing = math.Round(t.Northing/unit) * unit
 	sq.easting = math.Round(t.Easting/unit) * unit
 	sq.geopixels = make([]Geopixel, 0)
 	sq.currHeightAngle = bottomHeightAngle
-	sq.prevElevation = elevation0
-	sq.elevation0 = elevation0
+	sq.prevElevation = t.ElevMap.elevation(intStep(sq.easting), intStep(sq.northing))
+	sq.elevation0 = sq.prevElevation + 10
 	sq.geopixelLen = t.GeopixelLen
 
 	sin := math.Sin(rad) // east

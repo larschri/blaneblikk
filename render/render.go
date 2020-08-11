@@ -25,7 +25,6 @@ func getRGB(b dataset5000.Geopixel) rgb {
 func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
-	elevation0 := elevMap.GetElevation(view.Easting, view.Northing, 0) + 20
 
 	img := image.NewRGBA(image.Rectangle{
 		image.Point{0, 0},
@@ -33,15 +32,15 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 	})
 
 	trans2 := dataset5000.Transform{
-		Easting:     view.Easting,
-		Northing:    view.Northing,
+		Easting:     math.Round(view.Easting / 10) * 10,
+		Northing:    math.Round(view.Northing / 10) * 10,
 		ElevMap:     elevMap,
 		GeopixelLen: geopixelLen,
 	}
 
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
-		geopixels := trans2.TraceDirection(rad, elevation0)
+		geopixels := trans2.TraceDirection(rad)
 
 		len := len(geopixels)
 		if len > geopixelLen {
