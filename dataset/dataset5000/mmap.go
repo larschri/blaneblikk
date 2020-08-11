@@ -11,17 +11,23 @@ import (
 
 const numberOfSmallSquares = bigSquareSize / smallSquareSize
 
+// elvation16 contains elevation values stored as 1/10 meter
+type elevation16 int16
+
+// elevation16Multiplier should be used to convert elevation16 to meter
+const elevation16Unit = 0.1
+
 // Mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
 type Mmap5000 struct {
 	EastingMin    float64
 	NorthingMax   float64
-	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]int16
+	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]elevation16
 
 	// Elvations is a matrix of elevation matrices.
-	// An elevation data point is a int16 where a unit corresponds to 0.1 meter of elevation
+	// An elevation data point is a elevation16 where a unit corresponds to 0.1 meter of elevation
 	// An elevation matrix contains 25x25 such elevation data points
 	// This matrix contains 200x200 such elevation matrices.
-	Elevations [numberOfSmallSquares][numberOfSmallSquares][smallSquareSize][smallSquareSize]int16
+	Elevations [numberOfSmallSquares][numberOfSmallSquares][smallSquareSize][smallSquareSize]elevation16
 }
 
 type DatasetReader interface {
@@ -48,7 +54,7 @@ func toMmapStruct(buf [][]float32) *Mmap5000 {
 					col := j*smallSquareSize + n
 
 					floatval := buf[row][col]
-					intval := int16(math.Round(unit * float64(floatval)))
+					intval := elevation16(math.Round(float64(floatval) / elevation16Unit))
 
 					if m < smallSquareSize && n < smallSquareSize {
 						result.Elevations[i][j][m][n] = intval

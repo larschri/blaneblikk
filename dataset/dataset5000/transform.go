@@ -257,7 +257,7 @@ func (sq *squareIterator) TraceNorthSouth(elevationMap ElevationMap, eastStepLen
 
 		nr := eastingIndex - float64(erest)
 		elev2 := (float64(l01)*nr +
-			float64(l00)*(1-nr)) / step
+			float64(l00)*(1-nr)) * elevation16Unit
 
 		sq.updateState(elev2, i)
 		prevIter = sIter
