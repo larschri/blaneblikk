@@ -73,6 +73,14 @@ func sign(i float64) intStep {
 	}
 }
 
+func (bld *geoPixelBuilder) elevationLimit(i intStep) float64 {
+	dist := float64(i) * bld.stepLength
+	earthCurvatureAngle := atanPrecalc[int(dist/step)]
+	elevationLimit1 := dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	elevationLimit2 := float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	return bld.elevation0 + math.Min(elevationLimit1, elevationLimit2)
+}
+
 func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
@@ -131,11 +139,7 @@ func (bld *geoPixelBuilder) TraceEastWest(elevationMap ElevationMap, eastStepper
 		sIter.init(eastingIndex, nrest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			dist := float64(i) * bld.stepLength
-			earthCurvatureAngle := atanPrecalc[int(dist/step)]
-			elevationLimit1 := bld.elevation0 + dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := bld.elevation0 + float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
+			elevationLimit := bld.elevationLimit(i)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
 				elevationMap.maxElevation(eastingIndex, nrest+intStep(northStepper.stepLen*smallSquareSize)) < elevationLimit {
@@ -212,11 +216,7 @@ func (bld *geoPixelBuilder) TraceNorthSouth(elevationMap ElevationMap, eastStepp
 		sIter.init(northingIndex, erest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			dist := float64(i) * bld.stepLength
-			earthCurvatureAngle := atanPrecalc[int(dist/step)]
-			elevationLimit1 := bld.elevation0 + dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-			elevationLimit2 := bld.elevation0 + float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-			elevationLimit := math.Min(elevationLimit1, elevationLimit2)
+			elevationLimit := bld.elevationLimit(i)
 
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
 				elevationMap.maxElevation(erest+intStep(eastStepper.stepLen*smallSquareSize), northingIndex) < elevationLimit { //?
