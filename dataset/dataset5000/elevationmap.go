@@ -46,18 +46,21 @@ func (em ElevationMap) lookup(e indices, n indices) elevation16 {
 	return ms.Elevations[n.i2][e.i2][n.i1][e.i1]
 }
 
+func index2(x intStep) int {
+	return int((x / smallSquareSize) % numberOfSmallSquares)
+}
+
 func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 	if e < 0 || n < 0 {
 		return -1
 	}
-	n0 := arrayIndices(n)
-	e0 := arrayIndices(e)
 
-	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
+	mmapStruct := em.lookupMmapStruct(int(e / bigSquareSize), int(n / bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
-	return float64(mmapStruct.MaxElevations[n0.i2][e0.i2]) / unit
+
+	return float64(mmapStruct.MaxElevations[index2(n)][index2(e)]) / unit
 }
 
 func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][smallSquareSize]elevation16 {
@@ -69,7 +72,8 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][sma
 	if mmapStruct == nil {
 		return nil
 	}
-	return &mmapStruct.Elevations[int((n/smallSquareSize) % numberOfSmallSquares)][int((e/smallSquareSize) % numberOfSmallSquares)]
+
+	return &mmapStruct.Elevations[index2(n)][index2(e)]
 }
 
 func (em ElevationMap) elevation(easting intStep, northing intStep) float64 {
