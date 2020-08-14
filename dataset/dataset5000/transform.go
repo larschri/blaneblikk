@@ -5,11 +5,13 @@ import (
 )
 
 const (
-	unit             = 10
-	bigSquareSize    = 5000
-	smallSquareSize  = 200
-	maxBlaneDistance = 200_000.0
-	earthRadius      = 6_371_000.0
+	unit              = 10
+	bigSquareSize     = 5000
+	smallSquareSize   = 200
+	maxBlaneDistance  = 200_000.0
+	earthRadius       = 6_371_000.0
+	bottomHeightAngle = -0.08
+	totalHeightAngle  = 0.16
 )
 
 var atanPrecalc [10 + maxBlaneDistance/unit]float64
@@ -31,10 +33,6 @@ type Transform struct {
 	ElevMap     ElevationMap
 	GeopixelLen int
 }
-
-const step float64 = 10
-const bottomHeightAngle float64 = -0.08
-const totalHeightAngle float64 = 0.16
 
 type intStepper struct {
 	start   intStep
@@ -74,7 +72,7 @@ func sign(i float64) intStep {
 
 func (bld *geoPixelBuilder) elevationLimit(i intStep) float64 {
 	dist := float64(i) * bld.stepLength
-	earthCurvatureAngle := atanPrecalc[int(dist/step)]
+	earthCurvatureAngle := atanPrecalc[int(dist/unit)]
 	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	elevationLimit2 := float64(i+smallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	return math.Min(elevationLimit1, elevationLimit2)
@@ -88,14 +86,14 @@ func weightElevation(elevation1 elevation16, elevation2 elevation16, elevation1W
 func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
 
 	dist := float64(i) * bld.stepLength
-	earthCurvatureAngle := atanPrecalc[int(dist/step)]
+	earthCurvatureAngle := atanPrecalc[int(dist/unit)]
 
 	heightAngle := math.Atan2(elevation, dist)
 
 	for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
 		bld.geopixels = append(bld.geopixels, Geopixel{
 			Distance: dist,
-			Incline:  (elevation - bld.prevElevation) * step / bld.stepLength,
+			Incline:  (elevation - bld.prevElevation) * unit / bld.stepLength,
 		})
 		bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
 	}
@@ -294,7 +292,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	cos := math.Cos(rad) // north
 
 	if math.Abs(sin) > math.Abs(cos) {
-		bld.stepLength = step / math.Abs(sin)
+		bld.stepLength = unit / math.Abs(sin)
 		bld.traceEastWest(t.ElevMap,
 			intStepper{
 				start:   eastingStart,
@@ -305,7 +303,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 				stepLen: -cos / math.Abs(sin),
 			})
 	} else {
-		bld.stepLength = step / math.Abs(cos)
+		bld.stepLength = unit / math.Abs(cos)
 		bld.traceNorthSouth(t.ElevMap,
 			floatStepper{
 				start:   float64(eastingStart),
