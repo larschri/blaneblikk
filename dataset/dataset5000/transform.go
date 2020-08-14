@@ -61,7 +61,6 @@ type geoPixelBuilder struct {
 	geopixels       []Geopixel
 	currHeightAngle float64
 	prevElevation   float64
-	elevation0      float64
 	geopixelLen     int
 }
 
@@ -78,18 +77,20 @@ func (bld *geoPixelBuilder) elevationLimit(i intStep) float64 {
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	elevationLimit2 := float64(i+smallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-	return bld.elevation0 + math.Min(elevationLimit1, elevationLimit2)
+	return math.Min(elevationLimit1, elevationLimit2)
 }
 
-func (bld *geoPixelBuilder) updateState(elevation1 elevation16, elevation2 elevation16, elevation1Weight float64, i intStep) {
-
-	elevation := (float64(elevation2)*elevation1Weight +
+func weightElevation(elevation1 elevation16, elevation2 elevation16, elevation1Weight float64) float64 {
+	return (float64(elevation2)*elevation1Weight +
 		float64(elevation1)*(1-elevation1Weight)) * elevation16Unit
+}
+
+func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
 
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 
-	heightAngle := math.Atan2(elevation-bld.elevation0, dist)
+	heightAngle := math.Atan2(elevation, dist)
 
 	for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
 		bld.geopixels = append(bld.geopixels, Geopixel{
@@ -127,6 +128,7 @@ type intStep int
 
 func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
+	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
 		front: 10000,
 		side:  10000,
@@ -143,7 +145,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 		sIter.init(eastingIndex, nrest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			elevationLimit := bld.elevationLimit(i)
+			elevationLimit := elevation0 + bld.elevationLimit(i)
 
 			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
 				elevationMap.maxElevation(eastingIndex, nrest+intStep(northStepper.stepLen*smallSquareSize)) < elevationLimit {
@@ -190,10 +192,10 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 			}
 		}
 
-		bld.updateState(sq0[sIter.side][sIter.front],
+		elevation := weightElevation(sq0[sIter.side][sIter.front],
 			sq1[sIter.side2][sIter.front],
-			northingIndex-float64(nrest),
-			i)
+			northingIndex-float64(nrest))
+		bld.updateState(elevation-elevation0, i)
 
 		prevIter = sIter
 	}
@@ -201,6 +203,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 
 func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
+	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
 		front: 10000,
 		side:  10000,
@@ -217,7 +220,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 		sIter.init(northingIndex, erest)
 
 		if atBorder(prevIter.front, sIter.front) {
-			elevationLimit := bld.elevationLimit(i)
+			elevationLimit := elevation0 + bld.elevationLimit(i)
 
 			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
 				elevationMap.maxElevation(erest+intStep(eastStepper.stepLen*smallSquareSize), northingIndex) < elevationLimit { //?
@@ -264,10 +267,11 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 			}
 		}
 
-		bld.updateState(sq0[sIter.front][sIter.side],
+		elevation := weightElevation(sq0[sIter.front][sIter.side],
 			sq1[sIter.front][sIter.side2],
-			eastingIndex-float64(erest),
-			i)
+			eastingIndex-float64(erest))
+
+		bld.updateState(elevation-elevation0, i)
 		prevIter = sIter
 	}
 }
@@ -279,14 +283,10 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	var eastingStart = intStep(easting0-t.ElevMap.minEasting) / unit
 	var northingStart = intStep(t.ElevMap.maxNorthing-northing0) / unit
 
-	prevElevation := t.ElevMap.elevation(intStep(easting0), intStep(northing0))
-
 	bld := geoPixelBuilder{
-		stepLength:      0,
 		geopixels:       make([]Geopixel, 0),
 		currHeightAngle: bottomHeightAngle,
-		prevElevation:   prevElevation,
-		elevation0:      prevElevation + 9,
+		prevElevation:   t.ElevMap.elevation(intStep(easting0), intStep(northing0)),
 		geopixelLen:     t.GeopixelLen,
 	}
 
