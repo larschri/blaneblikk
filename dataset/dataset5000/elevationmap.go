@@ -55,7 +55,7 @@ func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 		return -1
 	}
 
-	mmapStruct := em.lookupMmapStruct(int(e / bigSquareSize), int(n / bigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(e/bigSquareSize), int(n/bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
@@ -68,7 +68,7 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][sma
 		return nil
 	}
 
-	mmapStruct := em.lookupMmapStruct(int(e / bigSquareSize), int(n / bigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(e/bigSquareSize), int(n/bigSquareSize))
 	if mmapStruct == nil {
 		return nil
 	}

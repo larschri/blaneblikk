@@ -32,8 +32,8 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 	})
 
 	trans2 := dataset5000.Transform{
-		Easting:     math.Round(view.Easting / 10) * 10,
-		Northing:    math.Round(view.Northing / 10) * 10,
+		Easting:     math.Round(view.Easting/10) * 10,
+		Northing:    math.Round(view.Northing/10) * 10,
 		ElevMap:     elevMap,
 		GeopixelLen: geopixelLen,
 	}

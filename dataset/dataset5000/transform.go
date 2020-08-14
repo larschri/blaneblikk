@@ -37,21 +37,21 @@ const bottomHeightAngle float64 = -0.08
 const totalHeightAngle float64 = 0.16
 
 type intStepper struct {
-	start intStep
+	start   intStep
 	stepLen intStep
 }
 
 func (s intStepper) step(i intStep) intStep {
-	return s.start + i * s.stepLen
+	return s.start + i*s.stepLen
 }
 
 type floatStepper struct {
-	start float64
+	start   float64
 	stepLen float64
 }
 
 func (s floatStepper) step(i intStep) float64 {
-	return s.start + float64(i) * s.stepLen
+	return s.start + float64(i)*s.stepLen
 }
 
 type geoPixelBuilder struct {
@@ -76,12 +76,16 @@ func sign(i float64) intStep {
 func (bld *geoPixelBuilder) elevationLimit(i intStep) float64 {
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
-	elevationLimit1 := dist*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-	elevationLimit2 := float64(i+smallSquareSize)*bld.stepLength*math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	elevationLimit2 := float64(i+smallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	return bld.elevation0 + math.Min(elevationLimit1, elevationLimit2)
 }
 
-func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
+func (bld *geoPixelBuilder) updateState(elevation1 elevation16, elevation2 elevation16, elevation1Weight float64, i intStep) {
+
+	elevation := (float64(elevation2)*elevation1Weight +
+		float64(elevation1)*(1-elevation1Weight)) * elevation16Unit
+
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/step)]
 
@@ -121,7 +125,7 @@ func (i *smallSquareIter) init(front intStep, side intStep) {
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
-func (bld *geoPixelBuilder) TraceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
+func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	prevIter := smallSquareIter{
 		front: 10000,
@@ -186,19 +190,16 @@ func (bld *geoPixelBuilder) TraceEastWest(elevationMap ElevationMap, eastStepper
 			}
 		}
 
-		l00 := sq0[sIter.side][sIter.front]
-		l01 := sq1[sIter.side2][sIter.front]
+		bld.updateState(sq0[sIter.side][sIter.front],
+			sq1[sIter.side2][sIter.front],
+			northingIndex-float64(nrest),
+			i)
 
-		nr := northingIndex - float64(nrest)
-		elev2 := (float64(l01)*nr +
-			float64(l00)*(1-nr)) * elevation16Unit
-
-		bld.updateState(elev2, i)
 		prevIter = sIter
 	}
 }
 
-func (bld *geoPixelBuilder) TraceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
+func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	prevIter := smallSquareIter{
 		front: 10000,
@@ -263,53 +264,52 @@ func (bld *geoPixelBuilder) TraceNorthSouth(elevationMap ElevationMap, eastStepp
 			}
 		}
 
-		l00 := sq0[sIter.front][sIter.side]
-		l01 := sq1[sIter.front][sIter.side2]
-
-		nr := eastingIndex - float64(erest)
-		elev2 := (float64(l01)*nr +
-			float64(l00)*(1-nr)) * elevation16Unit
-
-		bld.updateState(elev2, i)
+		bld.updateState(sq0[sIter.front][sIter.side],
+			sq1[sIter.front][sIter.side2],
+			eastingIndex-float64(erest),
+			i)
 		prevIter = sIter
 	}
 }
 
 func (t Transform) TraceDirection(rad float64) []Geopixel {
-	var bld geoPixelBuilder
-
 	northing0 := math.Round(t.Northing/unit) * unit
 	easting0 := math.Round(t.Easting/unit) * unit
 
 	var eastingStart = intStep(easting0-t.ElevMap.minEasting) / unit
 	var northingStart = intStep(t.ElevMap.maxNorthing-northing0) / unit
 
-	bld.geopixels = make([]Geopixel, 0)
-	bld.currHeightAngle = bottomHeightAngle
-	bld.prevElevation = t.ElevMap.elevation(intStep(easting0), intStep(northing0))
-	bld.elevation0 = bld.prevElevation + 10
-	bld.geopixelLen = t.GeopixelLen
+	prevElevation := t.ElevMap.elevation(intStep(easting0), intStep(northing0))
+
+	bld := geoPixelBuilder{
+		stepLength:      0,
+		geopixels:       make([]Geopixel, 0),
+		currHeightAngle: bottomHeightAngle,
+		prevElevation:   prevElevation,
+		elevation0:      prevElevation + 9,
+		geopixelLen:     t.GeopixelLen,
+	}
 
 	sin := math.Sin(rad) // east
 	cos := math.Cos(rad) // north
 
 	if math.Abs(sin) > math.Abs(cos) {
 		bld.stepLength = step / math.Abs(sin)
-		bld.TraceEastWest(t.ElevMap,
+		bld.traceEastWest(t.ElevMap,
 			intStepper{
-				start: eastingStart,
+				start:   eastingStart,
 				stepLen: sign(sin),
 			},
 			floatStepper{
 				start:   float64(northingStart),
-				stepLen: -cos/math.Abs(sin),
+				stepLen: -cos / math.Abs(sin),
 			})
 	} else {
 		bld.stepLength = step / math.Abs(cos)
-		bld.TraceNorthSouth(t.ElevMap,
+		bld.traceNorthSouth(t.ElevMap,
 			floatStepper{
-				start: float64(eastingStart),
-				stepLen: sin/math.Abs(cos),
+				start:   float64(eastingStart),
+				stepLen: sin / math.Abs(cos),
 			},
 			intStepper{
 				start:   northingStart,
