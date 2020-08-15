@@ -56,7 +56,7 @@ func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	xx := render.Args{
 		Start:       angle - 0.05,
 		Width:       .1,
-		Columns:     400,
+		Columns:     800,
 		Step:        10,
 		Easting:     easting,
 		Northing:    northing,

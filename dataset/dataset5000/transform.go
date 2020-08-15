@@ -136,30 +136,30 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 	var sq0 = elevationMap.lookupSquare(eastStepper.start, intStep(math.Floor(northStepper.start)))
 	var sq1 = elevationMap.lookupSquare(eastStepper.start, intStep(math.Floor(northStepper.start))+1)
 	for i := intStep(1); i < totalSteps; i++ {
-		eastingIndex := eastStepper.step(i)
-		northingIndex := northStepper.step(i)
-		nrest := intStep(math.Floor(northingIndex))
+		eastStep := eastStepper.step(i)
+		northFloat := northStepper.step(i)
+		northStep := intStep(math.Floor(northFloat))
 
-		sIter.init(eastingIndex, nrest)
+		sIter.init(eastStep, northStep)
 
 		if atBorder(prevIter.front, sIter.front) {
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
-			if elevationMap.maxElevation(eastingIndex, nrest) < elevationLimit &&
-				elevationMap.maxElevation(eastingIndex, nrest+intStep(northStepper.stepLen*smallSquareSize)) < elevationLimit {
+			if elevationMap.maxElevation(eastStep, northStep) < elevationLimit &&
+				elevationMap.maxElevation(eastStep, northStep+intStep(northStepper.stepLen*smallSquareSize)) < elevationLimit {
 				i += (smallSquareSize - 1)
 				eastingIndex := eastStepper.step(i)
-				northingIndex := northStepper.step(i)
-				nrest = intStep(math.Floor(northingIndex))
-				prevIter.init(eastingIndex, nrest)
+				northFloat = northStepper.step(i)
+				northStep = intStep(math.Floor(northFloat))
+				prevIter.init(eastingIndex, northStep)
 				continue
 			}
-			sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
+			sq0 = elevationMap.lookupSquare(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
+				sq1 = elevationMap.lookupSquare(eastStep, northStep+1)
 				if sq1 == nil {
 					break
 				}
@@ -171,7 +171,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.lookupSquare(eastingIndex, nrest)
+					sq0 = elevationMap.lookupSquare(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -180,7 +180,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.lookupSquare(eastingIndex, nrest+1)
+					sq1 = elevationMap.lookupSquare(eastStep, northStep+1)
 					if sq1 == nil {
 						break
 					}
@@ -192,7 +192,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 
 		elevation := weightElevation(sq0[sIter.side][sIter.front],
 			sq1[sIter.side2][sIter.front],
-			northingIndex-float64(nrest))
+			northFloat-float64(northStep))
 		bld.updateState(elevation-elevation0, i)
 
 		prevIter = sIter
@@ -211,30 +211,30 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastStepper.start)), northStepper.start)
 	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastStepper.start))+1, northStepper.start)
 	for i := intStep(1); i < totalSteps; i++ {
-		northingIndex := northStepper.step(i)
-		eastingIndex := eastStepper.step(i)
-		erest := intStep(math.Floor(eastingIndex))
+		northStep := northStepper.step(i)
+		eastFloat := eastStepper.step(i)
+		eastStep := intStep(math.Floor(eastFloat))
 
-		sIter.init(northingIndex, erest)
+		sIter.init(northStep, eastStep)
 
 		if atBorder(prevIter.front, sIter.front) {
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
-			if elevationMap.maxElevation(erest, northingIndex) < elevationLimit &&
-				elevationMap.maxElevation(erest+intStep(eastStepper.stepLen*smallSquareSize), northingIndex) < elevationLimit { //?
+			if elevationMap.maxElevation(eastStep, northStep) < elevationLimit &&
+				elevationMap.maxElevation(eastStep+intStep(eastStepper.stepLen*smallSquareSize), northStep) < elevationLimit { //?
 				i += (smallSquareSize - 1)
-				northingIndex = northStepper.step(i)
-				eastingIndex = eastStepper.step(i)
-				erest = intStep(math.Floor(eastingIndex))
-				prevIter.init(northingIndex, erest)
+				northStep = northStepper.step(i)
+				eastFloat = eastStepper.step(i)
+				eastStep = intStep(math.Floor(eastFloat))
+				prevIter.init(northStep, eastStep)
 				continue
 			}
-			sq0 = elevationMap.lookupSquare(erest, northingIndex)
+			sq0 = elevationMap.lookupSquare(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.lookupSquare(erest+1, northingIndex)
+				sq1 = elevationMap.lookupSquare(eastStep+1, northStep)
 				if sq1 == nil {
 					break
 				}
@@ -246,7 +246,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.lookupSquare(erest, northingIndex)
+					sq0 = elevationMap.lookupSquare(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -255,7 +255,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.lookupSquare(erest+1, northingIndex)
+					sq1 = elevationMap.lookupSquare(eastStep+1, northStep)
 					if sq1 == nil {
 						break
 					}
@@ -267,7 +267,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 
 		elevation := weightElevation(sq0[sIter.front][sIter.side],
 			sq1[sIter.front][sIter.side2],
-			eastingIndex-float64(erest))
+			eastFloat-float64(eastStep))
 
 		bld.updateState(elevation-elevation0, i)
 		prevIter = sIter
