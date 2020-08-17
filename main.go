@@ -77,7 +77,7 @@ func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 		writeJSONResponse(w, nil, err)
 		return
 	}
-	lat, lng := dtm10utm32.ITranslate(pos.Northing, pos.Easting)
+	lat, lng := dtm10utm32.ITranslate(pos.Easting, pos.Northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,

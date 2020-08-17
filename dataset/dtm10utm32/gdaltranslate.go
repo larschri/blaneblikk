@@ -25,7 +25,7 @@ func Translate(lat float64, lng float64) (float64, float64) {
 	return xs[0], ys[0]
 }
 
-func ITranslate(northing float64, easting float64) (float64, float64) {
+func ITranslate(easting float64, northing float64) (float64, float64) {
 	xs := []float64{easting}
 	ys := []float64{northing}
 	zs := []float64{1}
