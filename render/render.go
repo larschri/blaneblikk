@@ -3,7 +3,6 @@ package render
 import (
 	"fmt"
 	"github.com/larschri/blaner/dataset/dataset5000"
-	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"image"
 	"math"
 )
@@ -23,12 +22,12 @@ func getRGB(b dataset5000.Geopixel) rgb {
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
 
-type LatLng struct {
-	Lat float64 `json:"lat"`
-	Lng float64 `json:"lng"`
+type Position struct {
+	Northing float64
+	Easting float64
 }
 
-func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) (LatLng, error) {
+func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) (Position, error) {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 
@@ -44,19 +43,13 @@ func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY i
 
 	idx := geopixelLen - posY * subPixels
 	if idx < len(geopixels) {
-		sin := math.Sin(rad) // east
-		cos := math.Cos(rad) // north
-		lat, lng := dtm10utm32.ITranslate(trans2.Northing + cos * geopixels[idx].Distance, trans2.Easting + sin * geopixels[idx].Distance)
-		return LatLng{
-			Lat: lat,
-			Lng: lng,
+		return Position{
+			Northing: trans2.Northing + math.Cos(rad) * geopixels[idx].Distance,
+			Easting: trans2.Easting + math.Sin(rad) * geopixels[idx].Distance,
 		}, nil
 	}
 
-	return LatLng{
-		Lat: 0,
-		Lng: 0,
-	}, fmt.Errorf("Invalid position")
+	return Position{}, fmt.Errorf("Invalid position")
 }
 
 func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {

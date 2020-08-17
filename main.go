@@ -71,8 +71,16 @@ func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 
 func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 	renderArgs := requestToRenderArgs(req)
-	latlng, err := render.PixelToLatLng(renderArgs, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
-	writeJSONResponse(w, latlng, err)
+	pos, err := render.PixelToLatLng(renderArgs, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
+	if err != nil {
+		writeJSONResponse(w, nil, err)
+		return
+	}
+	lat, lng := dtm10utm32.ITranslate(pos.Northing, pos.Easting)
+	writeJSONResponse(w, map[string]interface{}{
+		"lat": lat,
+		"lng": lng,
+	}, nil)
 }
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
