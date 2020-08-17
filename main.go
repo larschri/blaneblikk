@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/larschri/blaner/dataset/dataset5000"
 	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"github.com/larschri/blaner/render"
@@ -47,13 +47,19 @@ func getFloatParam(req *http.Request, param string) float64 {
 	return f
 }
 
-func blanerHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add("Content-Type", "image/png")
+func getIntParam(req *http.Request, param string) int {
+	num, err := strconv.ParseInt(req.URL.Query().Get(param), 10, 32)
+	if err != nil {
+		panic(err)
+	}
+	return int(num)
+}
+
+func requestToRenderArgs(req *http.Request) render.Args {
 	easting, northing := dtm10utm32.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
 	easting1, northing1 := dtm10utm32.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting-easting1, northing1-northing)
-	fmt.Println(angle)
-	xx := render.Args{
+	return render.Args{
 		Start:       angle - 0.05,
 		Width:       .1,
 		Columns:     800,
@@ -63,6 +69,25 @@ func blanerHandler(w http.ResponseWriter, req *http.Request) {
 		HeightAngle: .16,
 		MinHeight:   -.08,
 	}
+}
+
+func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	xx := requestToRenderArgs(req)
+	latlng := render.PixelToLatLng(xx, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
+	bytes, err := json.Marshal(latlng)
+	if err != nil {
+		panic(err)
+	}
+	_, err = w.Write(bytes)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func blanerHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Add("Content-Type", "image/png")
+	xx := requestToRenderArgs(req)
 	png.Encode(w, render.CreateImage(xx, elevmap))
 }
 
@@ -77,6 +102,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
+		http.HandleFunc("/blaner/pixelLatLng", pixelLatLngHandler)
 		http.HandleFunc("/blaner", blanerHandler)
 		http.Handle("/", http.FileServer(http.Dir("htdocs")))
 		err := http.ListenAndServe(":8090", nil)

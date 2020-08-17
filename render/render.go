@@ -1,7 +1,9 @@
 package render
 
 import (
+	"fmt"
 	"github.com/larschri/blaner/dataset/dataset5000"
+	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"image"
 	"math"
 )
@@ -20,6 +22,46 @@ type Args struct {
 func getRGB(b dataset5000.Geopixel) rgb {
 	incline := math.Max(0, math.Min(1, b.Incline/20))
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
+}
+
+type LatLng struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) LatLng {
+	subPixels := 3
+	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
+
+	trans2 := dataset5000.Transform{
+		Easting:     math.Round(view.Easting/10) * 10,
+		Northing:    math.Round(view.Northing/10) * 10,
+		ElevMap:     elevMap,
+		GeopixelLen: geopixelLen,
+	}
+
+	rad := view.Start + (float64(/*view.Columns-*/posX) * view.Width / float64(view.Columns))
+	geopixels := trans2.TraceDirection(rad)
+
+	idx := geopixelLen - posY * subPixels
+	fmt.Println(geopixelLen, posY)
+	if idx < len(geopixels) {
+		sin := math.Sin(rad) // east
+		cos := math.Cos(rad) // north
+		fmt.Println("dist: ", geopixels[idx])
+		lat, lng := dtm10utm32.ITranslate(trans2.Northing + cos * geopixels[idx].Distance, trans2.Easting + sin * geopixels[idx].Distance)
+		return LatLng{
+			Lat: lat,
+			Lng: lng,
+		}
+	} else {
+		fmt.Println("noes")
+	}
+
+	return LatLng{
+		Lat: 0,
+		Lng: 0,
+	}
 }
 
 func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
