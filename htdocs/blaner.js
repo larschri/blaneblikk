@@ -41,8 +41,9 @@ document.querySelector('#blanerImg').addEventListener('click', event => {
     request.responseType = "json";
     request.send();
     request.onload = function() {
-	    marker2
+	marker2
 		.setLatLng(request.response)
 		.addTo(map);
+	map.panInside(request.response)
     };
 });
