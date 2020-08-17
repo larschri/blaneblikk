@@ -40,15 +40,13 @@ func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY i
 		GeopixelLen: geopixelLen,
 	}
 
-	rad := view.Start + (float64(/*view.Columns-*/posX) * view.Width / float64(view.Columns))
+	rad := view.Start + (float64(posX) * view.Width / float64(view.Columns))
 	geopixels := trans2.TraceDirection(rad)
 
 	idx := geopixelLen - posY * subPixels
-	fmt.Println(geopixelLen, posY)
 	if idx < len(geopixels) {
 		sin := math.Sin(rad) // east
 		cos := math.Cos(rad) // north
-		fmt.Println("dist: ", geopixels[idx])
 		lat, lng := dtm10utm32.ITranslate(trans2.Northing + cos * geopixels[idx].Distance, trans2.Easting + sin * geopixels[idx].Distance)
 		return LatLng{
 			Lat: lat,
