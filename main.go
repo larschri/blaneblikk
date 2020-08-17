@@ -48,7 +48,7 @@ func requestToRenderArgs(req *http.Request) render.Args {
 	}
 }
 
-func writeResponse(w http.ResponseWriter, result interface{}, err error) {
+func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 	if err != nil {
 		w.WriteHeader(400)
 		w.Write([]byte(err.Error()))
@@ -62,6 +62,7 @@ func writeResponse(w http.ResponseWriter, result interface{}, err error) {
 		return
 	}
 
+	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(bytes)
 	if err != nil {
 		panic(err)
@@ -69,16 +70,15 @@ func writeResponse(w http.ResponseWriter, result interface{}, err error) {
 }
 
 func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	xx := requestToRenderArgs(req)
-	latlng, err := render.PixelToLatLng(xx, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
-	writeResponse(w, latlng, err)
+	renderArgs := requestToRenderArgs(req)
+	latlng, err := render.PixelToLatLng(renderArgs, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
+	writeJSONResponse(w, latlng, err)
 }
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	xx := requestToRenderArgs(req)
-	png.Encode(w, render.CreateImage(xx, elevmap))
+	renderArgs := requestToRenderArgs(req)
+	png.Encode(w, render.CreateImage(renderArgs, elevmap))
 }
 
 func main() {
