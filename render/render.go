@@ -12,7 +12,6 @@ type Args struct {
 	Start       float64
 	Width       float64
 	Columns     int
-	Step        float64
 	Easting     float64
 	Northing    float64
 	HeightAngle float64
@@ -29,7 +28,7 @@ type LatLng struct {
 	Lng float64 `json:"lng"`
 }
 
-func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) LatLng {
+func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) (LatLng, error) {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 
@@ -51,15 +50,13 @@ func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY i
 		return LatLng{
 			Lat: lat,
 			Lng: lng,
-		}
-	} else {
-		fmt.Println("noes")
+		}, nil
 	}
 
 	return LatLng{
 		Lat: 0,
 		Lng: 0,
-	}
+	}, fmt.Errorf("Invalid position")
 }
 
 func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {

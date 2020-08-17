@@ -15,28 +15,6 @@ import (
 	"strconv"
 )
 
-var args1 = render.Args{
-	Start:       -2.2867,
-	Width:       .1,
-	Columns:     400,
-	Step:        10,
-	Easting:     463561,
-	Northing:    6833871,
-	HeightAngle: .16,
-	MinHeight:   -.08,
-}
-
-/*var args1 = render.Args{
-	Start:    -2.2867,
-	Width:    .1,
-	Columns:  400,
-	Step:     10,
-	Easting:  463564,
-	Northing: 6833871,
-	HeightAngle: .16,
-	MinHeight:   -.08,
-}*/
-
 var elevmap dataset5000.ElevationMap
 
 func getFloatParam(req *http.Request, param string) float64 {
@@ -63,7 +41,6 @@ func requestToRenderArgs(req *http.Request) render.Args {
 		Start:       angle - 0.05,
 		Width:       .1,
 		Columns:     800,
-		Step:        10,
 		Easting:     easting,
 		Northing:    northing,
 		HeightAngle: .16,
@@ -71,18 +48,31 @@ func requestToRenderArgs(req *http.Request) render.Args {
 	}
 }
 
-func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Add("Content-Type", "application/json")
-	xx := requestToRenderArgs(req)
-	latlng := render.PixelToLatLng(xx, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
-	bytes, err := json.Marshal(latlng)
+func writeResponse(w http.ResponseWriter, result interface{}, err error) {
 	if err != nil {
-		panic(err)
+		w.WriteHeader(400)
+		w.Write([]byte(err.Error()))
+		return
 	}
+
+	bytes, err := json.Marshal(result)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
 	_, err = w.Write(bytes)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Add("Content-Type", "application/json")
+	xx := requestToRenderArgs(req)
+	latlng, err := render.PixelToLatLng(xx, elevmap, getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
+	writeResponse(w, latlng, err)
 }
 
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
@@ -116,7 +106,15 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
-		img := render.CreateImage(args1, elevmap)
+		img := render.CreateImage(render.Args{
+			Start:       -2.2867,
+			Width:       .1,
+			Columns:     400,
+			Easting:     463561,
+			Northing:    6833871,
+			HeightAngle: .16,
+			MinHeight:   -.08,
+		}, elevmap)
 		file, _ := os.Create("foo.png")
 		png.Encode(file, img)
 	}
