@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-type Args struct {
+type Renderer struct {
 	Start       float64
 	Width       float64
 	Columns     int
@@ -15,6 +15,7 @@ type Args struct {
 	Northing    float64
 	HeightAngle float64
 	MinHeight   float64
+	Elevations  dataset5000.ElevationMap
 }
 
 func getRGB(b dataset5000.Geopixel) rgb {
@@ -27,14 +28,14 @@ type Position struct {
 	Easting float64
 }
 
-func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY int) (Position, error) {
+func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	trans2 := dataset5000.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
-		ElevMap:     elevMap,
+		ElevMap:     view.Elevations,
 		GeopixelLen: geopixelLen,
 	}
 
@@ -52,7 +53,7 @@ func PixelToLatLng(view Args, elevMap dataset5000.ElevationMap, posX int, posY i
 	return Position{}, fmt.Errorf("Invalid position")
 }
 
-func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
+func (view Renderer) CreateImage() *image.RGBA {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 
@@ -64,7 +65,7 @@ func CreateImage(view Args, elevMap dataset5000.ElevationMap) *image.RGBA {
 	trans2 := dataset5000.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
-		ElevMap:     elevMap,
+		ElevMap:     view.Elevations,
 		GeopixelLen: geopixelLen,
 	}
 
