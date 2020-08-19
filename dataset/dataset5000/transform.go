@@ -284,7 +284,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	bld := geoPixelBuilder{
 		geopixels:       make([]Geopixel, 0),
 		currHeightAngle: bottomHeightAngle,
-		prevElevation:   t.ElevMap.elevation(intStep(easting0), intStep(northing0)),
+		prevElevation:   t.ElevMap.elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
 	}
 

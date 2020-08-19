@@ -95,6 +95,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	elevmap, err = dataset5000.LoadFiles(dtm10utm32.Dataset{}, files)
 	if err != nil {
 		panic(err)

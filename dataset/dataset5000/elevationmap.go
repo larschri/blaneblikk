@@ -11,39 +11,12 @@ type ElevationMap struct {
 	mmapStructs [50][50]*Mmap5000
 }
 
-type indices struct {
-	i1 intStep
-	i2 int
-	i3 int
-}
-
-func arrayIndices(num intStep) indices {
-	return indices{
-		i1: num % smallSquareSize,
-		i2: int((num / smallSquareSize) % (bigSquareSize / smallSquareSize)),
-		i3: int(num / bigSquareSize),
-	}
-}
-
 func (em ElevationMap) lookupMmapStruct(e int, n int) *Mmap5000 {
 	if e < 0 || e >= 50 || n < 0 || n >= 50 {
 		return nil
 	}
 
 	return em.mmapStructs[e][n]
-}
-
-func (em ElevationMap) lookup(e indices, n indices) elevation16 {
-	if e.i3 < 0 || e.i3 >= 50 || n.i3 < 0 || n.i3 >= 50 {
-		return -1
-	}
-
-	ms := em.mmapStructs[e.i3][n.i3]
-	if ms == nil {
-		return -1
-	}
-
-	return ms.Elevations[n.i2][e.i2][n.i1][e.i1]
 }
 
 func index2(x intStep) int {
@@ -77,21 +50,11 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][sma
 }
 
 func (em ElevationMap) elevation(easting intStep, northing intStep) float64 {
-	easting2 := (easting - intStep(em.minEasting)) / unit
-	northing2 := (intStep(em.maxNorthing) - northing) / unit
-
-	if easting2 < 0 || northing2 < 0 {
-		return -1
-	}
-
-	n0 := arrayIndices(northing2)
-	e0 := arrayIndices(easting2)
-
-	mmapStruct := em.lookupMmapStruct(e0.i3, n0.i3)
+	mmapStruct := em.lookupMmapStruct(int(easting / bigSquareSize), int(northing / bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
-	return float64(mmapStruct.Elevations[n0.i2][e0.i2][n0.i1][e0.i1]) * elevation16Unit
+	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing % smallSquareSize][easting % smallSquareSize]) * elevation16Unit
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
