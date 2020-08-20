@@ -4,6 +4,18 @@ import (
 	"math"
 )
 
+type ElevationMapInterface interface {
+	lookupSquare(e intStep, n intStep) SmallSquare
+	maxElevation(e intStep, n intStep) float64
+	elevation(easting intStep, northing intStep) float64
+	offsets() (float64, float64)
+}
+
+type SmallSquare interface {
+	elevation(easting intStep, northing intStep) elevation16
+}
+// type smallSquare *[smallSquareSize][smallSquareSize]elevation16
+
 const (
 	unit              = 10
 	bigSquareSize     = 5000
@@ -30,7 +42,7 @@ type Geopixel struct {
 type Transform struct {
 	Easting     float64
 	Northing    float64
-	ElevMap     ElevationMap
+	ElevMap     ElevationMapInterface
 	GeopixelLen int
 }
 
@@ -124,7 +136,7 @@ func (i *smallSquareIter) init(front intStep, side intStep) {
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
-func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
+func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMapInterface, eastStepper intStepper, northStepper floatStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
@@ -190,8 +202,8 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 			}
 		}
 
-		elevation := weightElevation(sq0[sIter.side][sIter.front],
-			sq1[sIter.side2][sIter.front],
+		elevation := weightElevation(sq0.elevation(sIter.front, sIter.side),
+			sq1.elevation(sIter.front, sIter.side2),
 			northFloat-float64(northStep))
 		bld.updateState(elevation-elevation0, i)
 
@@ -199,7 +211,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 	}
 }
 
-func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
+func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMapInterface, eastStepper floatStepper, northStepper intStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
@@ -265,8 +277,8 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 			}
 		}
 
-		elevation := weightElevation(sq0[sIter.front][sIter.side],
-			sq1[sIter.front][sIter.side2],
+		elevation := weightElevation(sq0.elevation(sIter.side, sIter.front),
+			sq1.elevation(sIter.side2, sIter.front),
 			eastFloat-float64(eastStep))
 
 		bld.updateState(elevation-elevation0, i)
@@ -278,8 +290,9 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	northing0 := math.Round(t.Northing/unit) * unit
 	easting0 := math.Round(t.Easting/unit) * unit
 
-	var eastingStart = intStep(easting0-t.ElevMap.minEasting) / unit
-	var northingStart = intStep(t.ElevMap.maxNorthing-northing0) / unit
+	minEasting, maxNorthing := t.ElevMap.offsets()
+	var eastingStart = intStep(easting0-minEasting) / unit
+	var northingStart = intStep(maxNorthing-northing0) / unit
 
 	bld := geoPixelBuilder{
 		geopixels:       make([]Geopixel, 0),

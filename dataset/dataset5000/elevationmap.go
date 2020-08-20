@@ -11,6 +11,10 @@ type ElevationMap struct {
 	mmapStructs [50][50]*Mmap5000
 }
 
+func (em ElevationMap) offsets() (float64, float64) {
+	return em.minEasting, em.maxNorthing
+}
+
 func (em ElevationMap) lookupMmapStruct(e int, n int) *Mmap5000 {
 	if e < 0 || e >= 50 || n < 0 || n >= 50 {
 		return nil
@@ -36,7 +40,7 @@ func (em ElevationMap) maxElevation(e intStep, n intStep) float64 {
 	return float64(mmapStruct.MaxElevations[index2(n)][index2(e)]) / unit
 }
 
-func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][smallSquareSize]elevation16 {
+func (em ElevationMap) lookupSquare(e intStep, n intStep) SmallSquare {
 	if e < 0 || n < 0 {
 		return nil
 	}
@@ -46,7 +50,13 @@ func (em ElevationMap) lookupSquare(e intStep, n intStep) *[smallSquareSize][sma
 		return nil
 	}
 
-	return &mmapStruct.Elevations[index2(n)][index2(e)]
+	return (*square)(&mmapStruct.Elevations[index2(n)][index2(e)])
+}
+
+type square [smallSquareSize][smallSquareSize]elevation16
+
+func (sq *square) elevation(easting intStep, northing intStep) elevation16 {
+	return sq[northing][easting]
 }
 
 func (em ElevationMap) elevation(easting intStep, northing intStep) float64 {
