@@ -5,7 +5,7 @@ import (
 )
 
 type ElevationMapInterface interface {
-	lookupSquare(e intStep, n intStep) SmallSquare
+	lookupSquare(e intStep, n intStep) *[200][200]elevation16
 	maxElevation(e intStep, n intStep) float64
 	elevation(easting intStep, northing intStep) float64
 	offsets() (float64, float64)
@@ -201,9 +201,8 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMapInterface, ea
 				}
 			}
 		}
-
-		elevation := weightElevation(sq0.elevation(sIter.front, sIter.side),
-			sq1.elevation(sIter.front, sIter.side2),
+		elevation := weightElevation(sq0[sIter.side][sIter.front],
+			sq1[sIter.side2][sIter.front],
 			northFloat-float64(northStep))
 		bld.updateState(elevation-elevation0, i)
 
@@ -276,9 +275,8 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMapInterface, 
 				}
 			}
 		}
-
-		elevation := weightElevation(sq0.elevation(sIter.side, sIter.front),
-			sq1.elevation(sIter.side2, sIter.front),
+		elevation := weightElevation(sq0[sIter.front][sIter.side],
+			sq1[sIter.front][sIter.side2],
 			eastFloat-float64(eastStep))
 
 		bld.updateState(elevation-elevation0, i)
@@ -295,7 +293,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	var northingStart = intStep(maxNorthing-northing0) / unit
 
 	bld := geoPixelBuilder{
-		geopixels:       make([]Geopixel, 0),
+		geopixels:       make([]Geopixel, 1000),
 		currHeightAngle: bottomHeightAngle,
 		prevElevation:   t.ElevMap.elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,

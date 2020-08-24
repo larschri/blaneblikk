@@ -119,7 +119,7 @@ func main() {
 		img := render.Renderer{
 			Start:       -2.2867,
 			Width:       .1,
-			Columns:     400,
+			Columns:     800,
 			Easting:     463561,
 			Northing:    6833871,
 			HeightAngle: .16,
