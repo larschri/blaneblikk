@@ -9,25 +9,25 @@ import (
 	"unsafe"
 )
 
-const numberOfSmallSquares = bigSquareSize / smallSquareSize
+const numberOfSmallSquares = BigSquareSize / SmallSquareSize
 
 // elvation16 contains elevation values stored as 1/10 meter
-type elevation16 int16
+type Elevation16 int16
 
-// elevation16Multiplier should be used to convert elevation16 to meter
-const elevation16Unit = 0.1
+// Elevation16Multiplier should be used to convert Elevation16 to meter
+const Elevation16Unit = 0.1
 
 // Mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
 type Mmap5000 struct {
 	EastingMin    float64
 	NorthingMax   float64
-	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]elevation16
+	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]Elevation16
 
 	// Elvations is a matrix of elevation matrices.
-	// An elevation data point is a elevation16 where a unit corresponds to 0.1 meter of elevation
+	// An elevation data point is a Elevation16 where a unit corresponds to 0.1 meter of elevation
 	// An elevation matrix contains 25x25 such elevation data points
 	// This matrix contains 200x200 such elevation matrices.
-	Elevations [numberOfSmallSquares][numberOfSmallSquares][smallSquareSize][smallSquareSize]elevation16
+	Elevations [numberOfSmallSquares][numberOfSmallSquares][SmallSquareSize][SmallSquareSize]Elevation16
 }
 
 type DatasetReader interface {
@@ -48,15 +48,15 @@ func toMmapStruct(buf [][]float32) *Mmap5000 {
 		for j := 0; j < numberOfSmallSquares; j++ {
 			// The loops below _includes_ the 25th element to compute MaxElevations.
 			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
-			for m := 0; m <= smallSquareSize; m++ {
-				row := i*smallSquareSize + m
-				for n := 0; n <= smallSquareSize; n++ {
-					col := j*smallSquareSize + n
+			for m := 0; m <= SmallSquareSize; m++ {
+				row := i*SmallSquareSize + m
+				for n := 0; n <= SmallSquareSize; n++ {
+					col := j*SmallSquareSize + n
 
 					floatval := buf[row][col]
-					intval := elevation16(math.Round(float64(floatval) / elevation16Unit))
+					intval := Elevation16(math.Round(float64(floatval) / Elevation16Unit))
 
-					if m < smallSquareSize && n < smallSquareSize {
+					if m < SmallSquareSize && n < SmallSquareSize {
 						result.Elevations[i][j][m][n] = intval
 					}
 

@@ -1,24 +1,22 @@
-package dataset5000
+package transform
 
 import (
+	"github.com/larschri/blaner/dataset/dataset5000"
 	"math"
 )
 
 const (
-	unit              = 10
-	bigSquareSize     = 5000
-	smallSquareSize   = 200
 	maxBlaneDistance  = 200_000.0
 	earthRadius       = 6_371_000.0
 	bottomHeightAngle = -0.08
 	totalHeightAngle  = 0.16
 )
 
-var atanPrecalc [10 + maxBlaneDistance/unit]float64
+var atanPrecalc [10 + maxBlaneDistance/dataset5000.Unit]float64
 
 func init() {
 	for i := 0; i < len(atanPrecalc); i++ {
-		atanPrecalc[i] = math.Atan2(float64(unit*i)/2, earthRadius)
+		atanPrecalc[i] = math.Atan2(float64(dataset5000.Unit*i)/2, earthRadius)
 	}
 }
 
@@ -30,16 +28,16 @@ type Geopixel struct {
 type Transform struct {
 	Easting     float64
 	Northing    float64
-	ElevMap     ElevationMap
+	ElevMap     dataset5000.ElevationMap
 	GeopixelLen int
 }
 
 type intStepper struct {
-	start   intStep
-	stepLen intStep
+	start   dataset5000.IntStep
+	stepLen dataset5000.IntStep
 }
 
-func (s intStepper) step(i intStep) intStep {
+func (s intStepper) step(i dataset5000.IntStep) dataset5000.IntStep {
 	return s.start + i*s.stepLen
 }
 
@@ -48,7 +46,7 @@ type floatStepper struct {
 	stepLen float64
 }
 
-func (s floatStepper) step(i intStep) float64 {
+func (s floatStepper) step(i dataset5000.IntStep) float64 {
 	return s.start + float64(i)*s.stepLen
 }
 
@@ -62,7 +60,7 @@ type geoPixelBuilder struct {
 	geopixelLen     int
 }
 
-func sign(i float64) intStep {
+func sign(i float64) dataset5000.IntStep {
 	if i < 0 {
 		return -1
 	} else {
@@ -70,37 +68,37 @@ func sign(i float64) intStep {
 	}
 }
 
-func (bld *geoPixelBuilder) elevationLimit(i intStep) float64 {
+func (bld *geoPixelBuilder) elevationLimit(i dataset5000.IntStep) float64 {
 	dist := float64(i) * bld.stepLength
-	earthCurvatureAngle := atanPrecalc[int(dist/unit)]
+	earthCurvatureAngle := atanPrecalc[int(dist/dataset5000.Unit)]
 	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-	elevationLimit2 := float64(i+smallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	elevationLimit2 := float64(i+dataset5000.SmallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	return math.Min(elevationLimit1, elevationLimit2)
 }
 
-func weightElevation(elevation1 elevation16, elevation2 elevation16, elevation1Weight float64) float64 {
+func weightElevation(elevation1 dataset5000.Elevation16, elevation2 dataset5000.Elevation16, elevation1Weight float64) float64 {
 	return (float64(elevation2)*elevation1Weight +
-		float64(elevation1)*(1-elevation1Weight)) * elevation16Unit
+		float64(elevation1)*(1-elevation1Weight)) * dataset5000.Elevation16Unit
 }
 
-func (bld *geoPixelBuilder) updateState(elevation float64, i intStep) {
+func (bld *geoPixelBuilder) updateState(elevation float64, i dataset5000.IntStep) {
 
 	dist := float64(i) * bld.stepLength
-	earthCurvatureAngle := atanPrecalc[int(dist/unit)]
+	earthCurvatureAngle := atanPrecalc[int(dist/dataset5000.Unit)]
 
 	heightAngle := math.Atan2(elevation, dist)
 
 	for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
 		bld.geopixels = append(bld.geopixels, Geopixel{
 			Distance: dist,
-			Incline:  (elevation - bld.prevElevation) * unit / bld.stepLength,
+			Incline:  (elevation - bld.prevElevation) * dataset5000.Unit / bld.stepLength,
 		})
 		bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
 	}
 	bld.prevElevation = elevation
 }
 
-func atBorder(a intStep, b intStep) bool {
+func atBorder(a dataset5000.IntStep, b dataset5000.IntStep) bool {
 	if a > b {
 		return a-b > 1 || b < 0
 	}
@@ -109,23 +107,19 @@ func atBorder(a intStep, b intStep) bool {
 }
 
 type smallSquareIter struct {
-	front intStep
-	side  intStep
-	side2 intStep
+	front dataset5000.IntStep
+	side  dataset5000.IntStep
+	side2 dataset5000.IntStep
 }
 
-func (i *smallSquareIter) init(front intStep, side intStep) {
-	i.front = front % smallSquareSize
-	i.side = side % smallSquareSize
-	i.side2 = (side + 1) % smallSquareSize
+func (i *smallSquareIter) init(front dataset5000.IntStep, side dataset5000.IntStep) {
+	i.front = front % dataset5000.SmallSquareSize
+	i.side = side % dataset5000.SmallSquareSize
+	i.side2 = (side + 1) % dataset5000.SmallSquareSize
 }
 
-// intStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
-// easting/northing. intStep values must be multiplied by 10 to get easting/northing
-type intStep int
-
-func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
-	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
+func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset5000.ElevationMap, eastStepper intStepper, northStepper floatStepper) {
+	totalSteps := dataset5000.IntStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
 		front: 10000,
@@ -133,33 +127,33 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var sq0 = elevationMap.lookupSquare(eastStepper.start, intStep(math.Floor(northStepper.start)))
-	var sq1 = elevationMap.lookupSquare(eastStepper.start, intStep(math.Floor(northStepper.start))+1)
-	for i := intStep(1); i < totalSteps; i++ {
+	var sq0 = elevationMap.LookupSquare(eastStepper.start, dataset5000.IntStep(math.Floor(northStepper.start)))
+	var sq1 = elevationMap.LookupSquare(eastStepper.start, dataset5000.IntStep(math.Floor(northStepper.start))+1)
+	for i := dataset5000.IntStep(1); i < totalSteps; i++ {
 		eastStep := eastStepper.step(i)
 		northFloat := northStepper.step(i)
-		northStep := intStep(math.Floor(northFloat))
+		northStep := dataset5000.IntStep(math.Floor(northFloat))
 
 		sIter.init(eastStep, northStep)
 
 		if atBorder(prevIter.front, sIter.front) {
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
-			if elevationMap.maxElevation(eastStep, northStep) < elevationLimit &&
-				elevationMap.maxElevation(eastStep, northStep+intStep(northStepper.stepLen*smallSquareSize)) < elevationLimit {
-				i += (smallSquareSize - 1)
+			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
+				elevationMap.MaxElevation(eastStep, northStep+dataset5000.IntStep(northStepper.stepLen*dataset5000.SmallSquareSize)) < elevationLimit {
+				i += (dataset5000.SmallSquareSize - 1)
 				eastingIndex := eastStepper.step(i)
 				northFloat = northStepper.step(i)
-				northStep = intStep(math.Floor(northFloat))
+				northStep = dataset5000.IntStep(math.Floor(northFloat))
 				prevIter.init(eastingIndex, northStep)
 				continue
 			}
-			sq0 = elevationMap.lookupSquare(eastStep, northStep)
+			sq0 = elevationMap.LookupSquare(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.lookupSquare(eastStep, northStep+1)
+				sq1 = elevationMap.LookupSquare(eastStep, northStep+1)
 				if sq1 == nil {
 					break
 				}
@@ -171,7 +165,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.lookupSquare(eastStep, northStep)
+					sq0 = elevationMap.LookupSquare(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -180,7 +174,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.lookupSquare(eastStep, northStep+1)
+					sq1 = elevationMap.LookupSquare(eastStep, northStep+1)
 					if sq1 == nil {
 						break
 					}
@@ -198,8 +192,8 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper
 	}
 }
 
-func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
-	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
+func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset5000.ElevationMap, eastStepper floatStepper, northStepper intStepper) {
+	totalSteps := dataset5000.IntStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
 		front: 10000,
@@ -207,33 +201,33 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var sq0 = elevationMap.lookupSquare(intStep(math.Floor(eastStepper.start)), northStepper.start)
-	var sq1 = elevationMap.lookupSquare(intStep(math.Floor(eastStepper.start))+1, northStepper.start)
-	for i := intStep(1); i < totalSteps; i++ {
+	var sq0 = elevationMap.LookupSquare(dataset5000.IntStep(math.Floor(eastStepper.start)), northStepper.start)
+	var sq1 = elevationMap.LookupSquare(dataset5000.IntStep(math.Floor(eastStepper.start))+1, northStepper.start)
+	for i := dataset5000.IntStep(1); i < totalSteps; i++ {
 		northStep := northStepper.step(i)
 		eastFloat := eastStepper.step(i)
-		eastStep := intStep(math.Floor(eastFloat))
+		eastStep := dataset5000.IntStep(math.Floor(eastFloat))
 
 		sIter.init(northStep, eastStep)
 
 		if atBorder(prevIter.front, sIter.front) {
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
-			if elevationMap.maxElevation(eastStep, northStep) < elevationLimit &&
-				elevationMap.maxElevation(eastStep+intStep(eastStepper.stepLen*smallSquareSize), northStep) < elevationLimit { //?
-				i += (smallSquareSize - 1)
+			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
+				elevationMap.MaxElevation(eastStep+dataset5000.IntStep(eastStepper.stepLen*dataset5000.SmallSquareSize), northStep) < elevationLimit { //?
+				i += (dataset5000.SmallSquareSize - 1)
 				northStep = northStepper.step(i)
 				eastFloat = eastStepper.step(i)
-				eastStep = intStep(math.Floor(eastFloat))
+				eastStep = dataset5000.IntStep(math.Floor(eastFloat))
 				prevIter.init(northStep, eastStep)
 				continue
 			}
-			sq0 = elevationMap.lookupSquare(eastStep, northStep)
+			sq0 = elevationMap.LookupSquare(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.lookupSquare(eastStep+1, northStep)
+				sq1 = elevationMap.LookupSquare(eastStep+1, northStep)
 				if sq1 == nil {
 					break
 				}
@@ -245,7 +239,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.lookupSquare(eastStep, northStep)
+					sq0 = elevationMap.LookupSquare(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -254,7 +248,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.lookupSquare(eastStep+1, northStep)
+					sq1 = elevationMap.LookupSquare(eastStep+1, northStep)
 					if sq1 == nil {
 						break
 					}
@@ -273,17 +267,17 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepp
 }
 
 func (t Transform) TraceDirection(rad float64) []Geopixel {
-	northing0 := math.Round(t.Northing/unit) * unit
-	easting0 := math.Round(t.Easting/unit) * unit
+	northing0 := math.Round(t.Northing/dataset5000.Unit) * dataset5000.Unit
+	easting0 := math.Round(t.Easting/dataset5000.Unit) * dataset5000.Unit
 
-	minEasting, maxNorthing := t.ElevMap.offsets()
-	var eastingStart = intStep(easting0-minEasting) / unit
-	var northingStart = intStep(maxNorthing-northing0) / unit
+	minEasting, maxNorthing := t.ElevMap.Offsets()
+	var eastingStart = dataset5000.IntStep(easting0-minEasting) / dataset5000.Unit
+	var northingStart = dataset5000.IntStep(maxNorthing-northing0) / dataset5000.Unit
 
 	bld := geoPixelBuilder{
 		geopixels:       make([]Geopixel, 1000),
 		currHeightAngle: bottomHeightAngle,
-		prevElevation:   t.ElevMap.elevation(eastingStart, northingStart),
+		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
 	}
 
@@ -291,7 +285,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	cos := math.Cos(rad) // north
 
 	if math.Abs(sin) > math.Abs(cos) {
-		bld.stepLength = unit / math.Abs(sin)
+		bld.stepLength = dataset5000.Unit / math.Abs(sin)
 		bld.traceEastWest(t.ElevMap,
 			intStepper{
 				start:   eastingStart,
@@ -302,7 +296,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 				stepLen: -cos / math.Abs(sin),
 			})
 	} else {
-		bld.stepLength = unit / math.Abs(cos)
+		bld.stepLength = dataset5000.Unit / math.Abs(cos)
 		bld.traceNorthSouth(t.ElevMap,
 			floatStepper{
 				start:   float64(eastingStart),

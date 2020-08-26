@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"github.com/larschri/blaner/dataset/dataset5000"
+	"github.com/larschri/blaner/transform"
 	"image"
 	"math"
 )
@@ -18,7 +19,7 @@ type Renderer struct {
 	Elevations  dataset5000.ElevationMap
 }
 
-func getRGB(b dataset5000.Geopixel) rgb {
+func getRGB(b transform.Geopixel) rgb {
 	incline := math.Max(0, math.Min(1, b.Incline/20))
 	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 }
@@ -32,7 +33,7 @@ func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	subPixels := 3
 	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
 
-	trans2 := dataset5000.Transform{
+	trans2 := transform.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
 		ElevMap:     view.Elevations,
@@ -62,7 +63,7 @@ func (view Renderer) CreateImage() *image.RGBA {
 		image.Point{view.Columns, geopixelLen / subPixels},
 	})
 
-	trans2 := dataset5000.Transform{
+	trans2 := transform.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
 		ElevMap:     view.Elevations,
