@@ -7,8 +7,9 @@ import (
 
 const (
 	Unit              = 10
-	BigSquareSize     = 5000
 	SmallSquareSize   = 200
+	bigSquareSize     = 5000
+	numberOfSmallSquares = bigSquareSize / SmallSquareSize
 )
 
 // IntStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
@@ -18,14 +19,14 @@ type IntStep int
 type ElevationMap struct {
 	minEasting  float64
 	maxNorthing float64
-	mmapStructs [50][50]*Mmap5000
+	mmapStructs [50][50]*mmap5000
 }
 
 func (em ElevationMap) Offsets() (float64, float64) {
 	return em.minEasting, em.maxNorthing
 }
 
-func (em ElevationMap) lookupMmapStruct(e int, n int) *Mmap5000 {
+func (em ElevationMap) lookupMmapStruct(e int, n int) *mmap5000 {
 	if e < 0 || e >= 50 || n < 0 || n >= 50 {
 		return nil
 	}
@@ -42,7 +43,7 @@ func (em ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 		return -1
 	}
 
-	mmapStruct := em.lookupMmapStruct(int(e/BigSquareSize), int(n/BigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(e/bigSquareSize), int(n/bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
@@ -55,7 +56,7 @@ func (em ElevationMap) LookupSquare(e IntStep, n IntStep) *[SmallSquareSize][Sma
 		return nil
 	}
 
-	mmapStruct := em.lookupMmapStruct(int(e/BigSquareSize), int(n/BigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(e/bigSquareSize), int(n/bigSquareSize))
 	if mmapStruct == nil {
 		return nil
 	}
@@ -63,14 +64,8 @@ func (em ElevationMap) LookupSquare(e IntStep, n IntStep) *[SmallSquareSize][Sma
 	return &mmapStruct.Elevations[index2(n)][index2(e)]
 }
 
-type square [SmallSquareSize][SmallSquareSize]Elevation16
-
-func (sq *square) elevation(easting IntStep, northing IntStep) Elevation16 {
-	return sq[northing][easting]
-}
-
 func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
-	mmapStruct := em.lookupMmapStruct(int(easting /BigSquareSize), int(northing /BigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(easting /bigSquareSize), int(northing /bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
@@ -78,7 +73,7 @@ func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
-	mmapStructs := []*Mmap5000{}
+	mmapStructs := []*mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
 		maxNorthing: -math.MaxFloat64,
@@ -96,8 +91,8 @@ func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, erro
 		mmapStructs = append(mmapStructs, mmapStruct)
 	}
 	for _, mmapStruct := range mmapStructs {
-		x := (int(mmapStruct.EastingMin) - int(allElevations.minEasting)) / (BigSquareSize * Unit)
-		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / (BigSquareSize * Unit)
+		x := (int(mmapStruct.EastingMin) - int(allElevations.minEasting)) / (bigSquareSize * Unit)
+		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / (bigSquareSize * Unit)
 		allElevations.mmapStructs[x][y] = mmapStruct
 	}
 	for _, xx := range allElevations.mmapStructs {
