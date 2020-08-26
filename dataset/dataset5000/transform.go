@@ -4,18 +4,6 @@ import (
 	"math"
 )
 
-type ElevationMapInterface interface {
-	lookupSquare(e intStep, n intStep) *[200][200]elevation16
-	maxElevation(e intStep, n intStep) float64
-	elevation(easting intStep, northing intStep) float64
-	offsets() (float64, float64)
-}
-
-type SmallSquare interface {
-	elevation(easting intStep, northing intStep) elevation16
-}
-// type smallSquare *[smallSquareSize][smallSquareSize]elevation16
-
 const (
 	unit              = 10
 	bigSquareSize     = 5000
@@ -42,7 +30,7 @@ type Geopixel struct {
 type Transform struct {
 	Easting     float64
 	Northing    float64
-	ElevMap     ElevationMapInterface
+	ElevMap     ElevationMap
 	GeopixelLen int
 }
 
@@ -136,7 +124,7 @@ func (i *smallSquareIter) init(front intStep, side intStep) {
 // easting/northing. intStep values must be multiplied by 10 to get easting/northing
 type intStep int
 
-func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMapInterface, eastStepper intStepper, northStepper floatStepper) {
+func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMap, eastStepper intStepper, northStepper floatStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
@@ -210,7 +198,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap ElevationMapInterface, ea
 	}
 }
 
-func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMapInterface, eastStepper floatStepper, northStepper intStepper) {
+func (bld *geoPixelBuilder) traceNorthSouth(elevationMap ElevationMap, eastStepper floatStepper, northStepper intStepper) {
 	totalSteps := intStep(maxBlaneDistance / bld.stepLength)
 	elevation0 := bld.prevElevation + 9
 	prevIter := smallSquareIter{
