@@ -17,8 +17,6 @@ import (
 
 var elevmap dataset5000.ElevationMap
 
-var dtm *dtm10utm32.DTM10UTM32
-
 func getFloatParam(req *http.Request, param string) float64 {
 	f, err := strconv.ParseFloat(req.URL.Query().Get(param), 64)
 	if err != nil {
@@ -36,8 +34,8 @@ func getIntParam(req *http.Request, param string) int {
 }
 
 func requestToRenderer(req *http.Request) render.Renderer {
-	easting, northing := dtm.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
-	easting1, northing1 := dtm.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
+	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
+	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting-easting1, northing1-northing)
 	return render.Renderer{
 		Start:       angle - 0.05,
@@ -79,7 +77,7 @@ func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 		writeJSONResponse(w, nil, err)
 		return
 	}
-	lat, lng := dtm.ITranslate(pos.Easting, pos.Northing)
+	lat, lng := dtm10utm32.DTM10UTM32Dataset.ITranslate(pos.Easting, pos.Northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,
@@ -98,12 +96,10 @@ func main() {
 		panic(err)
 	}
 
-	elevmap, err = dataset5000.LoadFiles(dtm, files)
+	elevmap, err = dataset5000.LoadFiles(&dtm10utm32.DTM10UTM32Dataset, files)
 	if err != nil {
 		panic(err)
 	}
-
-	dtm = dtm10utm32.NewDTM10UTM32()
 
 	if len(os.Args) < 2 {
 		http.HandleFunc("/blaner/pixelLatLng", pixelLatLngHandler)

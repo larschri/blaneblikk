@@ -10,7 +10,6 @@ import (
 	"unsafe"
 )
 
-const UTM32WKT = `PROJCS["UTM Zone 32, Northern Hemisphere",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",9],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["Meter",1]]`
 
 func init() {
 	C.GDALAllRegister()
@@ -26,7 +25,7 @@ func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting fl
 	}
 
 	wkt := C.GDALGetProjectionRef(ds)
-	if C.GoString(wkt) != UTM32WKT {
+	if C.GoString(wkt) != dtm.wkt {
 		panic("Unexpected wkt for " + fname + ":" + C.GoString(wkt))
 	}
 
