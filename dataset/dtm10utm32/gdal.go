@@ -16,10 +16,7 @@ func init() {
 	C.GDALAllRegister()
 }
 
-type Dataset struct {
-}
-
-func (d Dataset) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
+func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
 	log.Printf("reading %s", fname)
 	cstr := C.CString(fname)
 	defer C.free(unsafe.Pointer(cstr))
