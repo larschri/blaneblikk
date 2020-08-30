@@ -12,7 +12,7 @@ import (
 // Elvation16 contains elevation values stored as 1/10 meter
 type Elevation16 int16
 
-// Elevation16Multiplier should be used to convert Elevation16 to meter
+// Elevation16Unit should be used to convert Elevation16 to meter
 const Elevation16Unit = 0.1
 
 // mmap5000 contains elevation data stored on disk and loaded into memory using mmap.
