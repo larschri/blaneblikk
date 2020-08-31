@@ -6,7 +6,10 @@ import (
 )
 
 const (
+	// Unit is the number of meters between each elevation point in the grid of elevation points
 	Unit              = 10
+
+	// SmallSquareSize is the height (and length) of the small squares that contains elevations
 	SmallSquareSize   = 200
 	bigSquareSize     = 5000
 	numberOfSmallSquares = bigSquareSize / SmallSquareSize
@@ -16,12 +19,14 @@ const (
 // easting/northing. IntStep values must be multiplied by 10 to get easting/northing
 type IntStep int
 
+// ElevationMap provides access to all elevation data
 type ElevationMap struct {
 	minEasting  float64
 	maxNorthing float64
 	mmapStructs [50][50]*mmap5000
 }
 
+// Offsets returns minimum easting and maximum northing
 func (em ElevationMap) Offsets() (float64, float64) {
 	return em.minEasting, em.maxNorthing
 }
@@ -38,6 +43,7 @@ func index2(x IntStep) int {
 	return int((x / SmallSquareSize) % numberOfSmallSquares)
 }
 
+// MaxElevation returns the maximum elevation in the small
 func (em ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	if e < 0 || n < 0 {
 		return -1

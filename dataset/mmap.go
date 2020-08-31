@@ -28,12 +28,15 @@ type mmap5000 struct {
 	Elevations [numberOfSmallSquares][numberOfSmallSquares][SmallSquareSize][SmallSquareSize]Elevation16
 }
 
+// DatasetReader reads elevation data from a file and returns it as a matrix
 type DatasetReader interface {
+	// ReadFile reads elevation data from a file and returns it as a matrix
 	ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64)
 }
 
 const mmapstructSize = unsafe.Sizeof(mmap5000{})
 
+// Close does nothing today
 func (m *mmap5000) Close() error {
 	return nil
 }
