@@ -1,4 +1,4 @@
-package dataset5000
+package dataset
 
 import (
 	"io/ioutil"

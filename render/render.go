@@ -2,7 +2,7 @@ package render
 
 import (
 	"fmt"
-	"github.com/larschri/blaner/dataset/dataset5000"
+	"github.com/larschri/blaner/dataset"
 	"github.com/larschri/blaner/transform"
 	"image"
 	"math"
@@ -16,7 +16,7 @@ type Renderer struct {
 	Northing    float64
 	HeightAngle float64
 	MinHeight   float64
-	Elevations  dataset5000.ElevationMap
+	Elevations  dataset.ElevationMap
 }
 
 func getRGB(b transform.Geopixel) rgb {
