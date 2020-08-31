@@ -7,9 +7,9 @@ package dtm10utm32
 import "C"
 
 type DTM10UTM32 struct {
-	trans C.OGRCoordinateTransformationH
+	trans  C.OGRCoordinateTransformationH
 	itrans C.OGRCoordinateTransformationH
-	wkt string
+	wkt    string
 }
 
 var DTM10UTM32Dataset DTM10UTM32

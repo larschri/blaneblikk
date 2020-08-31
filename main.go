@@ -124,7 +124,7 @@ func main() {
 			Northing:    6833871,
 			HeightAngle: .16,
 			MinHeight:   -.08,
-			Elevations: elevmap,
+			Elevations:  elevmap,
 		}.CreateImage()
 		file, _ := os.Create("foo.png")
 		png.Encode(file, img)

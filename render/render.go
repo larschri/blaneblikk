@@ -26,7 +26,7 @@ func getRGB(b transform.Geopixel) rgb {
 
 type Position struct {
 	Northing float64
-	Easting float64
+	Easting  float64
 }
 
 func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
@@ -43,11 +43,11 @@ func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	rad := view.Start + (float64(posX) * view.Width / float64(view.Columns))
 	geopixels := trans2.TraceDirection(rad)
 
-	idx := geopixelLen - posY * subPixels
+	idx := geopixelLen - posY*subPixels
 	if idx < len(geopixels) {
 		return Position{
-			Northing: trans2.Northing + math.Cos(rad) * geopixels[idx].Distance,
-			Easting: trans2.Easting + math.Sin(rad) * geopixels[idx].Distance,
+			Northing: trans2.Northing + math.Cos(rad)*geopixels[idx].Distance,
+			Easting:  trans2.Easting + math.Sin(rad)*geopixels[idx].Distance,
 		}, nil
 	}
 

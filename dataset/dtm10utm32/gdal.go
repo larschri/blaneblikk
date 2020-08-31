@@ -10,7 +10,6 @@ import (
 	"unsafe"
 )
 
-
 func init() {
 	C.GDALAllRegister()
 }

@@ -7,11 +7,11 @@ import (
 
 const (
 	// Unit is the number of meters between each elevation point in the grid of elevation points
-	Unit              = 10
+	Unit = 10
 
 	// ElevationMapletSize is the dimension of an ElevationMaplet
-	ElevationMapletSize   = 200
-	bigSquareSize     = 5000
+	ElevationMapletSize      = 200
+	bigSquareSize            = 5000
 	numberOfElevationMaplets = bigSquareSize / ElevationMapletSize
 )
 
@@ -75,11 +75,11 @@ func (em ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMap
 }
 
 func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
-	mmapStruct := em.lookupMmapStruct(int(easting /bigSquareSize), int(northing /bigSquareSize))
+	mmapStruct := em.lookupMmapStruct(int(easting/bigSquareSize), int(northing/bigSquareSize))
 	if mmapStruct == nil {
 		return -1
 	}
-	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing %ElevationMapletSize][easting %ElevationMapletSize]) * Elevation16Unit
+	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing%ElevationMapletSize][easting%ElevationMapletSize]) * Elevation16Unit
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
