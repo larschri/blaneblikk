@@ -19,13 +19,10 @@ const Elevation16Unit = 0.1
 type mmap5000 struct {
 	EastingMin    float64
 	NorthingMax   float64
-	MaxElevations [numberOfSmallSquares][numberOfSmallSquares]Elevation16
+	MaxElevations [numberOfElevationMaplets][numberOfElevationMaplets]Elevation16
 
-	// Elvations is a matrix of elevation matrices.
-	// An elevation data point is a Elevation16 where a unit corresponds to 0.1 meter of elevation
-	// An elevation matrix contains 25x25 such elevation data points
-	// This matrix contains 200x200 such elevation matrices.
-	Elevations [numberOfSmallSquares][numberOfSmallSquares][SmallSquareSize][SmallSquareSize]Elevation16
+	// Elvations is a matrix of ElevationMaplets
+	Elevations [numberOfElevationMaplets][numberOfElevationMaplets]ElevationMaplet
 }
 
 // DatasetReader reads elevation data from a file and returns it as a matrix
@@ -45,19 +42,19 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 
 	result := mmap5000{}
 
-	for i := 0; i < numberOfSmallSquares; i++ {
-		for j := 0; j < numberOfSmallSquares; j++ {
+	for i := 0; i < numberOfElevationMaplets; i++ {
+		for j := 0; j < numberOfElevationMaplets; j++ {
 			// The loops below _includes_ the 25th element to compute MaxElevations.
 			// Otherwise there would be a 10 meter gap between each 25x25 matrix.
-			for m := 0; m <= SmallSquareSize; m++ {
-				row := i*SmallSquareSize + m
-				for n := 0; n <= SmallSquareSize; n++ {
-					col := j*SmallSquareSize + n
+			for m := 0; m <= ElevationMapletSize; m++ {
+				row := i*ElevationMapletSize + m
+				for n := 0; n <= ElevationMapletSize; n++ {
+					col := j*ElevationMapletSize + n
 
 					floatval := buf[row][col]
 					intval := Elevation16(math.Round(float64(floatval) / Elevation16Unit))
 
-					if m < SmallSquareSize && n < SmallSquareSize {
+					if m < ElevationMapletSize && n < ElevationMapletSize {
 						result.Elevations[i][j][m][n] = intval
 					}
 
@@ -71,10 +68,10 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 	return &result
 }
 
-// LoadAsMmap will load the given fname using syscall.mmap
+// loadAsMmap will load the given fname using syscall.mmap
 // The data can be accessed through the returned *mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
-func LoadAsMmap(datasetReader DatasetReader, fname string) (*mmap5000, error) {
+func loadAsMmap(datasetReader DatasetReader, fname string) (*mmap5000, error) {
 	mmapFname := "/tmp/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {

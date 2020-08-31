@@ -72,7 +72,7 @@ func (bld *geoPixelBuilder) elevationLimit(i dataset.IntStep) float64 {
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/dataset.Unit)]
 	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-	elevationLimit2 := float64(i+dataset.SmallSquareSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	elevationLimit2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	return math.Min(elevationLimit1, elevationLimit2)
 }
 
@@ -113,9 +113,9 @@ type smallSquareIter struct {
 }
 
 func (i *smallSquareIter) init(front dataset.IntStep, side dataset.IntStep) {
-	i.front = front % dataset.SmallSquareSize
-	i.side = side % dataset.SmallSquareSize
-	i.side2 = (side + 1) % dataset.SmallSquareSize
+	i.front = front % dataset.ElevationMapletSize
+	i.side = side % dataset.ElevationMapletSize
+	i.side2 = (side + 1) % dataset.ElevationMapletSize
 }
 
 func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eastStepper intStepper, northStepper floatStepper) {
@@ -127,8 +127,8 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eas
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var sq0 = elevationMap.LookupSquare(eastStepper.start, dataset.IntStep(math.Floor(northStepper.start)))
-	var sq1 = elevationMap.LookupSquare(eastStepper.start, dataset.IntStep(math.Floor(northStepper.start))+1)
+	var sq0 = elevationMap.LookupElevationMaplet(eastStepper.start, dataset.IntStep(math.Floor(northStepper.start)))
+	var sq1 = elevationMap.LookupElevationMaplet(eastStepper.start, dataset.IntStep(math.Floor(northStepper.start))+1)
 	for i := dataset.IntStep(1); i < totalSteps; i++ {
 		eastStep := eastStepper.step(i)
 		northFloat := northStepper.step(i)
@@ -140,20 +140,20 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eas
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
 			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
-				elevationMap.MaxElevation(eastStep, northStep+dataset.IntStep(northStepper.stepLen*dataset.SmallSquareSize)) < elevationLimit {
-				i += (dataset.SmallSquareSize - 1)
+				elevationMap.MaxElevation(eastStep, northStep+dataset.IntStep(northStepper.stepLen*dataset.ElevationMapletSize)) < elevationLimit {
+				i += (dataset.ElevationMapletSize - 1)
 				eastingIndex := eastStepper.step(i)
 				northFloat = northStepper.step(i)
 				northStep = dataset.IntStep(math.Floor(northFloat))
 				prevIter.init(eastingIndex, northStep)
 				continue
 			}
-			sq0 = elevationMap.LookupSquare(eastStep, northStep)
+			sq0 = elevationMap.LookupElevationMaplet(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.LookupSquare(eastStep, northStep+1)
+				sq1 = elevationMap.LookupElevationMaplet(eastStep, northStep+1)
 				if sq1 == nil {
 					break
 				}
@@ -165,7 +165,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eas
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.LookupSquare(eastStep, northStep)
+					sq0 = elevationMap.LookupElevationMaplet(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -174,7 +174,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eas
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.LookupSquare(eastStep, northStep+1)
+					sq1 = elevationMap.LookupElevationMaplet(eastStep, northStep+1)
 					if sq1 == nil {
 						break
 					}
@@ -201,8 +201,8 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 		side2: 10000,
 	}
 	var sIter smallSquareIter
-	var sq0 = elevationMap.LookupSquare(dataset.IntStep(math.Floor(eastStepper.start)), northStepper.start)
-	var sq1 = elevationMap.LookupSquare(dataset.IntStep(math.Floor(eastStepper.start))+1, northStepper.start)
+	var sq0 = elevationMap.LookupElevationMaplet(dataset.IntStep(math.Floor(eastStepper.start)), northStepper.start)
+	var sq1 = elevationMap.LookupElevationMaplet(dataset.IntStep(math.Floor(eastStepper.start))+1, northStepper.start)
 	for i := dataset.IntStep(1); i < totalSteps; i++ {
 		northStep := northStepper.step(i)
 		eastFloat := eastStepper.step(i)
@@ -214,20 +214,20 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
 			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
-				elevationMap.MaxElevation(eastStep+dataset.IntStep(eastStepper.stepLen*dataset.SmallSquareSize), northStep) < elevationLimit { //?
-				i += (dataset.SmallSquareSize - 1)
+				elevationMap.MaxElevation(eastStep+dataset.IntStep(eastStepper.stepLen*dataset.ElevationMapletSize), northStep) < elevationLimit { //?
+				i += (dataset.ElevationMapletSize - 1)
 				northStep = northStepper.step(i)
 				eastFloat = eastStepper.step(i)
 				eastStep = dataset.IntStep(math.Floor(eastFloat))
 				prevIter.init(northStep, eastStep)
 				continue
 			}
-			sq0 = elevationMap.LookupSquare(eastStep, northStep)
+			sq0 = elevationMap.LookupElevationMaplet(eastStep, northStep)
 			if sq0 == nil {
 				break
 			}
 			if sIter.side2 == 0 {
-				sq1 = elevationMap.LookupSquare(eastStep+1, northStep)
+				sq1 = elevationMap.LookupElevationMaplet(eastStep+1, northStep)
 				if sq1 == nil {
 					break
 				}
@@ -239,7 +239,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 				if sIter.side == 0 {
 					sq0 = sq1
 				} else {
-					sq0 = elevationMap.LookupSquare(eastStep, northStep)
+					sq0 = elevationMap.LookupElevationMaplet(eastStep, northStep)
 					if sq0 == nil {
 						break
 					}
@@ -248,7 +248,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 
 			if atBorder(prevIter.side2, sIter.side2) {
 				if sIter.side2 == 0 {
-					sq1 = elevationMap.LookupSquare(eastStep+1, northStep)
+					sq1 = elevationMap.LookupElevationMaplet(eastStep+1, northStep)
 					if sq1 == nil {
 						break
 					}

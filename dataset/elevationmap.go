@@ -9,10 +9,10 @@ const (
 	// Unit is the number of meters between each elevation point in the grid of elevation points
 	Unit              = 10
 
-	// SmallSquareSize is the height (and length) of the small squares that contains elevations
-	SmallSquareSize   = 200
+	// ElevationMapletSize is the dimension of an ElevationMaplet
+	ElevationMapletSize   = 200
 	bigSquareSize     = 5000
-	numberOfSmallSquares = bigSquareSize / SmallSquareSize
+	numberOfElevationMaplets = bigSquareSize / ElevationMapletSize
 )
 
 // IntStep is used for indices of squares. It is a separate type to make it easy to distinguish it from
@@ -25,6 +25,10 @@ type ElevationMap struct {
 	maxNorthing float64
 	mmapStructs [50][50]*mmap5000
 }
+
+// ElevationMaplet is a small piece of the ElevationMap that fits in memory.
+// The contents is loaded from a memory mapped file
+type ElevationMaplet [ElevationMapletSize][ElevationMapletSize]Elevation16
 
 // Offsets returns minimum easting and maximum northing
 func (em ElevationMap) Offsets() (float64, float64) {
@@ -40,7 +44,7 @@ func (em ElevationMap) lookupMmapStruct(e int, n int) *mmap5000 {
 }
 
 func index2(x IntStep) int {
-	return int((x / SmallSquareSize) % numberOfSmallSquares)
+	return int((x / ElevationMapletSize) % numberOfElevationMaplets)
 }
 
 // MaxElevation returns the maximum elevation in the small
@@ -57,7 +61,7 @@ func (em ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	return float64(mmapStruct.MaxElevations[index2(n)][index2(e)]) / Unit
 }
 
-func (em ElevationMap) LookupSquare(e IntStep, n IntStep) *[SmallSquareSize][SmallSquareSize]Elevation16 {
+func (em ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMaplet {
 	if e < 0 || n < 0 {
 		return nil
 	}
@@ -67,7 +71,7 @@ func (em ElevationMap) LookupSquare(e IntStep, n IntStep) *[SmallSquareSize][Sma
 		return nil
 	}
 
-	return &mmapStruct.Elevations[index2(n)][index2(e)]
+	return (*ElevationMaplet)(&mmapStruct.Elevations[index2(n)][index2(e)])
 }
 
 func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
@@ -75,7 +79,7 @@ func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 	if mmapStruct == nil {
 		return -1
 	}
-	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing %SmallSquareSize][easting %SmallSquareSize]) * Elevation16Unit
+	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing %ElevationMapletSize][easting %ElevationMapletSize]) * Elevation16Unit
 }
 
 func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
@@ -86,7 +90,7 @@ func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, erro
 	}
 
 	for _, fName := range fNames {
-		mmapStruct, err := LoadAsMmap(datasetReader, fName)
+		mmapStruct, err := loadAsMmap(datasetReader, fName)
 		if err != nil {
 			fmt.Printf("%s: %v\n", fName, err)
 			continue
