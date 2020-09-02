@@ -31,11 +31,11 @@ type ElevationMap struct {
 type ElevationMaplet [ElevationMapletSize][ElevationMapletSize]Elevation16
 
 // Offsets returns minimum easting and maximum northing
-func (em ElevationMap) Offsets() (float64, float64) {
+func (em *ElevationMap) Offsets() (float64, float64) {
 	return em.minEasting, em.maxNorthing
 }
 
-func (em ElevationMap) lookupMmapStruct(e int, n int) *mmap5000 {
+func (em *ElevationMap) lookupMmapStruct(e int, n int) *mmap5000 {
 	if e < 0 || e >= 50 || n < 0 || n >= 50 {
 		return nil
 	}
@@ -48,7 +48,7 @@ func index2(x IntStep) int {
 }
 
 // MaxElevation returns the maximum elevation in the small
-func (em ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
+func (em *ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	if e < 0 || n < 0 {
 		return -1
 	}
@@ -61,7 +61,7 @@ func (em ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	return float64(mmapStruct.MaxElevations[index2(n)][index2(e)]) / Unit
 }
 
-func (em ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMaplet {
+func (em *ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMaplet {
 	if e < 0 || n < 0 {
 		return nil
 	}
@@ -74,7 +74,7 @@ func (em ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMap
 	return (*ElevationMaplet)(&mmapStruct.Elevations[index2(n)][index2(e)])
 }
 
-func (em ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
+func (em *ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 	mmapStruct := em.lookupMmapStruct(int(easting/bigSquareSize), int(northing/bigSquareSize))
 	if mmapStruct == nil {
 		return -1
