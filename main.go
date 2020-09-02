@@ -2,17 +2,17 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"github.com/larschri/blaner/dataset"
 	"github.com/larschri/blaner/dataset/dtm10utm32"
 	"github.com/larschri/blaner/render"
 	"image/png"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"strconv"
 )
 
@@ -92,6 +92,8 @@ func blanerHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
+	hostPort := flag.String("address", "localhost:8090", "http 'host:port' for the server")
+	flag.Parse()
 	files, err := filepath.Glob("dem-files/[^.]*.dem")
 	if err != nil {
 		panic(err)
@@ -102,32 +104,16 @@ func main() {
 		panic(err)
 	}
 
-	if len(os.Args) < 2 {
-		http.HandleFunc("/blaner/pixelLatLng", pixelLatLngHandler)
-		http.HandleFunc("/blaner", blanerHandler)
-		http.Handle("/", http.FileServer(http.Dir("htdocs")))
-		err := http.ListenAndServe(":8090", nil)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		f, err := os.Create("cpuprof")
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-		img := render.Renderer{
-			Start:       -2.2867,
-			Width:       .1,
-			Columns:     800,
-			Easting:     463561,
-			Northing:    6833871,
-			HeightAngle: .16,
-			MinHeight:   -.08,
-			Elevations:  elevmap,
-		}.CreateImage()
-		file, _ := os.Create("foo.png")
-		png.Encode(file, img)
+	http.HandleFunc("/blaner/pixelLatLng", pixelLatLngHandler)
+	http.HandleFunc("/blaner", blanerHandler)
+	http.Handle("/", http.FileServer(http.Dir("htdocs")))
+
+	listener, err := net.Listen("tcp", *hostPort)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	log.Print("Listening to " + *hostPort)
+
+	_ = http.Serve(listener, nil)
 }
