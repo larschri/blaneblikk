@@ -88,7 +88,7 @@ func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 func blanerHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
 	renderer := requestToRenderer(req)
-	png.Encode(w, renderer.CreateImage())
+	(&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
 }
 
 func main() {

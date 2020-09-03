@@ -88,12 +88,15 @@ func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
 
 	heightAngle := math.Atan2(elevation, dist)
 
-	for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
-		bld.geopixels = append(bld.geopixels, Geopixel{
+	if bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
+		pix := Geopixel{
 			Distance: dist,
 			Incline:  (elevation - bld.prevElevation) * dataset.Unit / bld.stepLength,
-		})
-		bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
+		}
+		for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
+			bld.geopixels = append(bld.geopixels, pix)
+			bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
+		}
 	}
 	bld.prevElevation = elevation
 }
@@ -275,7 +278,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 	var northingStart = dataset.IntStep(maxNorthing-northing0) / dataset.Unit
 
 	bld := geoPixelBuilder{
-		geopixels:       make([]Geopixel, 1000),
+		geopixels:       make([]Geopixel, 0, 2000),
 		currHeightAngle: bottomHeightAngle,
 		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
