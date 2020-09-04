@@ -14,9 +14,29 @@ const (
 
 var atanPrecalc [10 + maxBlaneDistance/dataset.Unit]float64
 
+var atanPrecalc2 [10000]float64
+var atanMin = math.Tan(-0.08)
+var atanMax = math.Tan(0.08)
+var atanStep = (atanMax - atanMin) / float64(len(atanPrecalc2) - 1)
+
+func myAtan(v float64) float64 {
+	if v < atanMin {
+		return -0.8 * 2
+	}
+	if v > atanMax {
+		return 0.8 * 2
+	}
+	idx := (v - atanMin) / (atanMax - atanMin) * float64(len(atanPrecalc2) - 1)
+	return atanPrecalc2[int(idx)]
+}
+
 func init() {
 	for i := 0; i < len(atanPrecalc); i++ {
 		atanPrecalc[i] = math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
+	}
+
+	for i := 0; i < len(atanPrecalc2); i++ {
+		atanPrecalc2[i] = math.Atan(atanMin + float64(i) * atanStep)
 	}
 }
 
@@ -86,7 +106,8 @@ func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
 	dist := float64(i) * bld.stepLength
 	earthCurvatureAngle := atanPrecalc[int(dist/dataset.Unit)]
 
-	heightAngle := math.Atan2(elevation, dist)
+	// heightAngle := math.Atan(elevation / dist)
+	heightAngle := myAtan(elevation / dist)
 
 	if bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
 		pix := Geopixel{
