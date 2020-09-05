@@ -1,6 +1,7 @@
 package transform
 
 import (
+	"fmt"
 	"github.com/larschri/blaner/dataset"
 	"math"
 )
@@ -12,32 +13,24 @@ const (
 	totalHeightAngle  = 0.16
 )
 
+var elevationToSubtract [10 + maxBlaneDistance/dataset.Unit]float64
+var pixelTan [3000]float64
+
 var atanPrecalc [10 + maxBlaneDistance/dataset.Unit]float64
-
-var atanPrecalc2 [10000]float64
-var atanMin = math.Tan(-0.08)
-var atanMax = math.Tan(0.08)
-var atanStep = (atanMax - atanMin) / float64(len(atanPrecalc2) - 1)
-
-func myAtan(v float64) float64 {
-	if v < atanMin {
-		return -0.8 * 2
-	}
-	if v > atanMax {
-		return 0.8 * 2
-	}
-	idx := (v - atanMin) / (atanMax - atanMin) * float64(len(atanPrecalc2) - 1)
-	return atanPrecalc2[int(idx)]
-}
 
 func init() {
 	for i := 0; i < len(atanPrecalc); i++ {
 		atanPrecalc[i] = math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
 	}
-
-	for i := 0; i < len(atanPrecalc2); i++ {
-		atanPrecalc2[i] = math.Atan(atanMin + float64(i) * atanStep)
+	for i := 0; i < len(elevationToSubtract); i++ {
+		elevationToSubtract[i] = float64(i) * dataset.Unit * math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
 	}
+
+	angleStep := totalHeightAngle / float64(len(pixelTan))
+	for i := 0; i < len(pixelTan); i++ {
+		pixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
+	}
+	fmt.Printf("pixeltan: %f --- %f\n", pixelTan[0], pixelTan[len(pixelTan)-1])
 }
 
 type Geopixel struct {
@@ -90,6 +83,7 @@ func sign(i float64) dataset.IntStep {
 
 func (bld *geoPixelBuilder) elevationLimit(i dataset.IntStep) float64 {
 	dist := float64(i) * bld.stepLength
+
 	earthCurvatureAngle := atanPrecalc[int(dist/dataset.Unit)]
 	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
 	elevationLimit2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
@@ -102,23 +96,21 @@ func weightElevation(elevation1 dataset.Elevation16, elevation2 dataset.Elevatio
 }
 
 func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
-
 	dist := float64(i) * bld.stepLength
-	earthCurvatureAngle := atanPrecalc[int(dist/dataset.Unit)]
 
-	// heightAngle := math.Atan(elevation / dist)
-	heightAngle := myAtan(elevation / dist)
+	elevationX := elevation - elevationToSubtract[int(dist/dataset.Unit)]
+	tanX := elevationX / dist
 
-	if bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
+	if tanX > pixelTan[len(bld.geopixels)] {
 		pix := Geopixel{
 			Distance: dist,
 			Incline:  (elevation - bld.prevElevation) * dataset.Unit / bld.stepLength,
 		}
-		for bld.currHeightAngle+earthCurvatureAngle <= heightAngle {
+		for tanX > pixelTan[len(bld.geopixels)] {
 			bld.geopixels = append(bld.geopixels, pix)
-			bld.currHeightAngle = float64(len(bld.geopixels))*totalHeightAngle/float64(bld.geopixelLen) + bottomHeightAngle
 		}
 	}
+
 	bld.prevElevation = elevation
 }
 
