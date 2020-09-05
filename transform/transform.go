@@ -157,7 +157,7 @@ func (bld *geoPixelBuilder) traceEastWest(elevationMap dataset.ElevationMap, eas
 
 			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
 				elevationMap.MaxElevation(eastStep, northStep+dataset.IntStep(northStepper.stepLen*dataset.ElevationMapletSize)) < elevationLimit {
-				i += (dataset.ElevationMapletSize - 1)
+				i += dataset.ElevationMapletSize - 1
 				eastingIndex := eastStepper.step(i)
 				northFloat = northStepper.step(i)
 				northStep = dataset.IntStep(math.Floor(northFloat))
@@ -231,7 +231,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 
 			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
 				elevationMap.MaxElevation(eastStep+dataset.IntStep(eastStepper.stepLen*dataset.ElevationMapletSize), northStep) < elevationLimit { //?
-				i += (dataset.ElevationMapletSize - 1)
+				i += dataset.ElevationMapletSize - 1
 				northStep = northStepper.step(i)
 				eastFloat = eastStepper.step(i)
 				eastStep = dataset.IntStep(math.Floor(eastFloat))
