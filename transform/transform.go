@@ -1,7 +1,6 @@
 package transform
 
 import (
-	"fmt"
 	"github.com/larschri/blaner/dataset"
 	"math"
 )
@@ -13,15 +12,10 @@ const (
 	totalHeightAngle  = 0.16
 )
 
-var elevationToSubtract [10 + maxBlaneDistance/dataset.Unit]float64
-var pixelTan [3000]float64
-
-var atanPrecalc [10 + maxBlaneDistance/dataset.Unit]float64
+var elevationToSubtract [10000 + maxBlaneDistance/dataset.Unit]float64
+var pixelTan [3840]float64
 
 func init() {
-	for i := 0; i < len(atanPrecalc); i++ {
-		atanPrecalc[i] = math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
-	}
 	for i := 0; i < len(elevationToSubtract); i++ {
 		elevationToSubtract[i] = float64(i) * dataset.Unit * math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
 	}
@@ -30,7 +24,6 @@ func init() {
 	for i := 0; i < len(pixelTan); i++ {
 		pixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
 	}
-	fmt.Printf("pixeltan: %f --- %f\n", pixelTan[0], pixelTan[len(pixelTan)-1])
 }
 
 type Geopixel struct {
@@ -68,7 +61,6 @@ type geoPixelBuilder struct {
 
 	//
 	geopixels       []Geopixel
-	currHeightAngle float64
 	prevElevation   float64
 	geopixelLen     int
 }
@@ -82,11 +74,12 @@ func sign(i float64) dataset.IntStep {
 }
 
 func (bld *geoPixelBuilder) elevationLimit(i dataset.IntStep) float64 {
-	dist := float64(i) * bld.stepLength
+	dist1 := float64(i) * bld.stepLength
+	elevationLimit1 := elevationToSubtract[int(dist1/dataset.Unit)] + pixelTan[len(bld.geopixels)] * dist1
 
-	earthCurvatureAngle := atanPrecalc[int(dist/dataset.Unit)]
-	elevationLimit1 := dist * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
-	elevationLimit2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength * math.Tan(bld.currHeightAngle+earthCurvatureAngle)
+	dist2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength
+	elevationLimit2 :=  elevationToSubtract[int(dist2/dataset.Unit)] + pixelTan[len(bld.geopixels)] * dist2
+
 	return math.Min(elevationLimit1, elevationLimit2)
 }
 
@@ -227,6 +220,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 		sIter.init(northStep, eastStep)
 
 		if atBorder(prevIter.front, sIter.front) {
+			//elevationLimit := elevation0 + bld.elevationLimit(i)
 			elevationLimit := elevation0 + bld.elevationLimit(i)
 
 			if elevationMap.MaxElevation(eastStep, northStep) < elevationLimit &&
@@ -292,7 +286,6 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 
 	bld := geoPixelBuilder{
 		geopixels:       make([]Geopixel, 0, 2000),
-		currHeightAngle: bottomHeightAngle,
 		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
 	}
