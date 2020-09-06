@@ -13,16 +13,10 @@ const (
 )
 
 var elevationToSubtract [10000 + maxBlaneDistance/dataset.Unit]float64
-var pixelTan [3840]float64
 
 func init() {
 	for i := 0; i < len(elevationToSubtract); i++ {
 		elevationToSubtract[i] = float64(i) * dataset.Unit * math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
-	}
-
-	angleStep := totalHeightAngle / float64(len(pixelTan))
-	for i := 0; i < len(pixelTan); i++ {
-		pixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
 	}
 }
 
@@ -36,7 +30,21 @@ type Transform struct {
 	Northing    float64
 	ElevMap     dataset.ElevationMap
 	GeopixelLen int
+	geopixelTan []float64
 }
+
+func (t *Transform) init() {
+	if t.geopixelTan == nil {
+		t.geopixelTan = make([]float64, t.GeopixelLen, t.GeopixelLen)
+
+		angleStep := totalHeightAngle / float64(t.GeopixelLen)
+		for i := 0; i < t.GeopixelLen; i++ {
+			t.geopixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
+		}
+	}
+}
+
+
 
 type intStepper struct {
 	start   dataset.IntStep
@@ -63,6 +71,7 @@ type geoPixelBuilder struct {
 	geopixels       []Geopixel
 	prevElevation   float64
 	geopixelLen     int
+	geopixelTan     []float64
 }
 
 func sign(i float64) dataset.IntStep {
@@ -75,10 +84,10 @@ func sign(i float64) dataset.IntStep {
 
 func (bld *geoPixelBuilder) elevationLimit(i dataset.IntStep) float64 {
 	dist1 := float64(i) * bld.stepLength
-	elevationLimit1 := elevationToSubtract[int(dist1/dataset.Unit)] + pixelTan[len(bld.geopixels)] * dist1
+	elevationLimit1 := elevationToSubtract[int(dist1/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist1
 
 	dist2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength
-	elevationLimit2 :=  elevationToSubtract[int(dist2/dataset.Unit)] + pixelTan[len(bld.geopixels)] * dist2
+	elevationLimit2 :=  elevationToSubtract[int(dist2/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist2
 
 	return math.Min(elevationLimit1, elevationLimit2)
 }
@@ -94,12 +103,12 @@ func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
 	elevationX := elevation - elevationToSubtract[int(dist/dataset.Unit)]
 	tanX := elevationX / dist
 
-	if tanX > pixelTan[len(bld.geopixels)] {
+	if tanX > bld.geopixelTan[len(bld.geopixels)] {
 		pix := Geopixel{
 			Distance: dist,
 			Incline:  (elevation - bld.prevElevation) * dataset.Unit / bld.stepLength,
 		}
-		for tanX > pixelTan[len(bld.geopixels)] {
+		for tanX > bld.geopixelTan[len(bld.geopixels)] {
 			bld.geopixels = append(bld.geopixels, pix)
 		}
 	}
@@ -276,7 +285,8 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 	}
 }
 
-func (t Transform) TraceDirection(rad float64) []Geopixel {
+func (t *Transform) TraceDirection(rad float64) []Geopixel {
+	t.init()
 	northing0 := math.Round(t.Northing/dataset.Unit) * dataset.Unit
 	easting0 := math.Round(t.Easting/dataset.Unit) * dataset.Unit
 
@@ -288,6 +298,7 @@ func (t Transform) TraceDirection(rad float64) []Geopixel {
 		geopixels:       make([]Geopixel, 0, 2000),
 		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
+		geopixelTan:     t.geopixelTan,
 	}
 
 	sin := math.Sin(rad) // east
