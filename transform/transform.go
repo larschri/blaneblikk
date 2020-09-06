@@ -12,11 +12,11 @@ const (
 	totalHeightAngle  = 0.16
 )
 
-var elevationToSubtract [10000 + maxBlaneDistance/dataset.Unit]float64
+var earthCurvatureDecline [10000 + maxBlaneDistance/dataset.Unit]float64
 
 func init() {
-	for i := 0; i < len(elevationToSubtract); i++ {
-		elevationToSubtract[i] = float64(i) * dataset.Unit * math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
+	for i := 0; i < len(earthCurvatureDecline); i++ {
+		earthCurvatureDecline[i] = float64(i) * dataset.Unit * math.Atan2(float64(dataset.Unit*i)/2, earthRadius)
 	}
 }
 
@@ -43,8 +43,6 @@ func (t *Transform) init() {
 		}
 	}
 }
-
-
 
 type intStepper struct {
 	start   dataset.IntStep
@@ -84,10 +82,10 @@ func sign(i float64) dataset.IntStep {
 
 func (bld *geoPixelBuilder) elevationLimit(i dataset.IntStep) float64 {
 	dist1 := float64(i) * bld.stepLength
-	elevationLimit1 := elevationToSubtract[int(dist1/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist1
+	elevationLimit1 := earthCurvatureDecline[int(dist1/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist1
 
 	dist2 := float64(i+dataset.ElevationMapletSize) * bld.stepLength
-	elevationLimit2 :=  elevationToSubtract[int(dist2/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist2
+	elevationLimit2 :=  earthCurvatureDecline[int(dist2/dataset.Unit)] + bld.geopixelTan[len(bld.geopixels)] * dist2
 
 	return math.Min(elevationLimit1, elevationLimit2)
 }
@@ -100,7 +98,7 @@ func weightElevation(elevation1 dataset.Elevation16, elevation2 dataset.Elevatio
 func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
 	dist := float64(i) * bld.stepLength
 
-	elevationX := elevation - elevationToSubtract[int(dist/dataset.Unit)]
+	elevationX := elevation - earthCurvatureDecline[int(dist/dataset.Unit)]
 	tanX := elevationX / dist
 
 	if tanX > bld.geopixelTan[len(bld.geopixels)] {
