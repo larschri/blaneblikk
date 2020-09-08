@@ -82,7 +82,7 @@ func (em *ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing%ElevationMapletSize][easting%ElevationMapletSize]) * Elevation16Unit
 }
 
-func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, error) {
+func LoadFiles(datasetReader DatasetReader, mmapFileDir string, fNames []string) (ElevationMap, error) {
 	mmapStructs := []*mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
@@ -90,7 +90,7 @@ func LoadFiles(datasetReader DatasetReader, fNames []string) (ElevationMap, erro
 	}
 
 	for _, fName := range fNames {
-		mmapStruct, err := loadAsMmap(datasetReader, fName)
+		mmapStruct, err := loadAsMmap(datasetReader, mmapFileDir, fName)
 		if err != nil {
 			fmt.Printf("%s: %v\n", fName, err)
 			continue

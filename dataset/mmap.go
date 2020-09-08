@@ -71,8 +71,8 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 // loadAsMmap will load the given fname using syscall.mmap
 // The data can be accessed through the returned *mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
-func loadAsMmap(datasetReader DatasetReader, fname string) (*mmap5000, error) {
-	mmapFname := "/tmp/" + path.Base(fname) + ".mmap"
+func loadAsMmap(datasetReader DatasetReader, mmapFileDir string, fname string) (*mmap5000, error) {
+	mmapFname := mmapFileDir + "/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
