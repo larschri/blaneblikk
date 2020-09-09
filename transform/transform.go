@@ -313,7 +313,7 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 
 //TraceDirection iterates through the ElevationMap to build a column of Geopixel that can be used to render an image.
 //The iteration starts at [t.Northing, t.Easting] and the direction is given by rad.
-func (t *Transform) TraceDirection(rad float64) []Geopixel {
+func (t *Transform) TraceDirection(rad float64, pixels []Geopixel) []Geopixel {
 	t.init()
 	northing0 := math.Round(t.Northing/dataset.Unit) * dataset.Unit
 	easting0 := math.Round(t.Easting/dataset.Unit) * dataset.Unit
@@ -323,7 +323,7 @@ func (t *Transform) TraceDirection(rad float64) []Geopixel {
 	var northingStart = dataset.IntStep(maxNorthing-northing0) / dataset.Unit
 
 	bld := geoPixelBuilder{
-		geopixels:       make([]Geopixel, 0, 1000),
+		geopixels:       pixels,
 		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
 		geopixelLen:     t.GeopixelLen,
 		geopixelTan:     t.geopixelTan,

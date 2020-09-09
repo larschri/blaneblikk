@@ -39,7 +39,7 @@ func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	}
 
 	rad := view.Start + (float64(posX) * view.Width / float64(view.Columns))
-	geopixels := trans2.TraceDirection(rad)
+	geopixels := trans2.TraceDirection(rad, make([]transform.Geopixel, 0, 5000))
 
 	idx := geopixelLen - posY*subPixels
 	if idx < len(geopixels) {
@@ -68,9 +68,11 @@ func (view Renderer) CreateImage() *image.RGBA {
 		GeopixelLen: geopixelLen,
 	}
 
+	var pixels [5000]transform.Geopixel
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
-		geopixels := trans2.TraceDirection(rad)
+
+		geopixels := trans2.TraceDirection(rad, pixels[:0])
 
 		len := len(geopixels)
 		if len > geopixelLen {
