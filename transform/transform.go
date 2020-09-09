@@ -14,10 +14,11 @@ const (
 	earthRadius       = 6_371_000.0
 
 	// bottomHeightAngle is the angle between the straight horizontal line and the bottom of the image
-	bottomHeightAngle = -0.08
+	bottomHeightAngle = -0.06
 
 	// totalHeightAngle is the angle between bottomHeightAngle and the top of the image
-	totalHeightAngle  = 0.16
+	totalHeightAngle  = 0.08
+	TotalHeightAngle  = 0.08
 )
 
 // earthCurvatureDecline contains "elevation penalty" by distance caused by earth curvature. This is an optimisation

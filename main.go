@@ -35,17 +35,16 @@ func getIntParam(req *http.Request, param string) int {
 }
 
 func requestToRenderer(req *http.Request) render.Renderer {
+	width := math.Pi * 2 / 64
 	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
 	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting-easting1, northing1-northing)
 	return render.Renderer{
-		Start:       angle - 0.05,
-		Width:       .1,
+		Start:       angle - width / 2,
+		Width:       width,
 		Columns:     800,
 		Easting:     easting,
 		Northing:    northing,
-		HeightAngle: .16,
-		MinHeight:   -.08,
 		Elevations:  elevmap,
 	}
 }

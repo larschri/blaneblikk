@@ -14,8 +14,6 @@ type Renderer struct {
 	Columns     int
 	Easting     float64
 	Northing    float64
-	HeightAngle float64
-	MinHeight   float64
 	Elevations  dataset.ElevationMap
 }
 
@@ -31,7 +29,7 @@ type Position struct {
 
 func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	subPixels := 3
-	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
+	geopixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	trans2 := transform.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
@@ -56,7 +54,7 @@ func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 
 func (view Renderer) CreateImage() *image.RGBA {
 	subPixels := 3
-	geopixelLen := int(view.HeightAngle*float64(view.Columns)/view.Width) * subPixels
+	geopixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	img := image.NewRGBA(image.Rectangle{
 		image.Point{0, 0},
