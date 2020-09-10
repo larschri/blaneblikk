@@ -43,6 +43,8 @@ var blue = rgb{
 
 var black = rgb{0, 0, 0, 1}
 
+var white = rgb{255, 255, 255, 1}
+
 func (c rgb) normalize() rgb {
 	return rgb{
 		c.r / c.w,

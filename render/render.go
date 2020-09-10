@@ -17,9 +17,16 @@ type Renderer struct {
 	Elevations  dataset.ElevationMap
 }
 
+// fadeFromDistance is a distance from where we add white to the color to make it fade
+const fadeFromDistance = 70000.0
+
 func getRGB(b transform.Geopixel) rgb {
 	incline := math.Max(0, math.Min(1, b.Incline/20))
-	return green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
+	color1 := green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
+	if b.Distance < fadeFromDistance {
+		return color1
+	}
+	return color1.add(white.scale((b.Distance-fadeFromDistance) / fadeFromDistance)).normalize()
 }
 
 type Position struct {
