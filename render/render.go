@@ -20,7 +20,7 @@ type Renderer struct {
 // fadeFromDistance is a distance from where we add white to the color to make it fade
 const fadeFromDistance = 70000.0
 
-func getRGB(b transform.Geopixel) rgb {
+func getRGB(b transform.GeoPixel) rgb {
 	incline := math.Max(0, math.Min(1, b.Incline/20))
 	color1 := green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
 	if b.Distance < fadeFromDistance {
@@ -36,65 +36,65 @@ type Position struct {
 
 func (view Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 	subPixels := 3
-	geopixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
+	geoPixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	trans2 := transform.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
 		ElevMap:     view.Elevations,
-		GeopixelLen: geopixelLen,
+		GeoPixelLen: geoPixelLen,
 	}
 
 	rad := view.Start + (float64(posX) * view.Width / float64(view.Columns))
-	geopixels := trans2.TraceDirection(rad, make([]transform.Geopixel, 0, 5000))
+	geoPixels := trans2.TraceDirection(rad, make([]transform.GeoPixel, 0, 5000))
 
-	idx := geopixelLen - posY*subPixels
-	if idx < len(geopixels) {
+	idx := geoPixelLen - posY*subPixels
+	if idx < len(geoPixels) {
 		return Position{
-			Northing: trans2.Northing + math.Cos(rad)*geopixels[idx].Distance,
-			Easting:  trans2.Easting + math.Sin(rad)*geopixels[idx].Distance,
+			Northing: trans2.Northing + math.Cos(rad)*geoPixels[idx].Distance,
+			Easting:  trans2.Easting + math.Sin(rad)*geoPixels[idx].Distance,
 		}, nil
 	}
 
-	return Position{}, fmt.Errorf("Invalid position")
+	return Position{}, fmt.Errorf("invalid position")
 }
 
 func (view Renderer) CreateImage() *image.RGBA {
 	subPixels := 3
-	geopixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
+	geoPixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	img := image.NewRGBA(image.Rectangle{
-		image.Point{0, 0},
-		image.Point{view.Columns, geopixelLen / subPixels},
+		image.Point{X: 0, Y: 0},
+		image.Point{X: view.Columns, Y: geoPixelLen / subPixels},
 	})
 
 	trans2 := transform.Transform{
 		Easting:     math.Round(view.Easting/10) * 10,
 		Northing:    math.Round(view.Northing/10) * 10,
 		ElevMap:     view.Elevations,
-		GeopixelLen: geopixelLen,
+		GeoPixelLen: geoPixelLen,
 	}
 
-	var pixels [5000]transform.Geopixel
+	var pixels [5000]transform.GeoPixel
 	for i := 0; i < view.Columns; i++ {
 		rad := view.Start + (float64(view.Columns-i) * view.Width / float64(view.Columns))
 
-		geopixels := trans2.TraceDirection(rad, pixels[:0])
+		geoPixels := trans2.TraceDirection(rad, pixels[:0])
 
-		len := len(geopixels)
-		if len > geopixelLen {
-			len = geopixelLen
+		len := len(geoPixels)
+		if len > geoPixelLen {
+			len = geoPixelLen
 		}
 		for j := 0; j < len; j += subPixels {
-			c := getRGB(geopixels[j])
+			c := getRGB(geoPixels[j])
 			alpha := 255 / subPixels
 			for k := 1; k < subPixels; k++ {
 				if j+k < len {
-					c = c.add(getRGB(geopixels[j+k]))
+					c = c.add(getRGB(geoPixels[j+k]))
 					alpha += 255 / subPixels
 				}
 			}
-			img.Set(view.Columns-i, (geopixelLen-j)/subPixels, c.normalize().getColor(uint8(alpha)))
+			img.Set(view.Columns-i, (geoPixelLen-j)/subPixels, c.normalize().getColor(uint8(alpha)))
 		}
 
 	}

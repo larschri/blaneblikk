@@ -16,9 +16,9 @@ func init() {
 
 func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
 	log.Printf("reading %s", fname)
-	cstr := C.CString(fname)
-	defer C.free(unsafe.Pointer(cstr))
-	ds := C.GDALOpen(cstr, C.GA_ReadOnly)
+	cStr := C.CString(fname)
+	defer C.free(unsafe.Pointer(cStr))
+	ds := C.GDALOpen(cStr, C.GA_ReadOnly)
 	if ds == nil {
 		panic("failed to read dem file")
 	}
@@ -36,16 +36,16 @@ func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting fl
 		panic("unexpected file format")
 	}
 
-	xsize := C.GDALGetRasterXSize(ds)
-	ysize := C.GDALGetRasterYSize(ds)
-	if xsize < 5040 || xsize > 5050 || ysize < 5040 || ysize > 5050 {
-		log.Panicf("unexpected dem file buffer size %d x %d", xsize, ysize)
+	xSize := C.GDALGetRasterXSize(ds)
+	ySize := C.GDALGetRasterYSize(ds)
+	if xSize < 5040 || xSize > 5050 || ySize < 5040 || ySize > 5050 {
+		log.Panicf("unexpected dem file buffer size %d x %d", xSize, ySize)
 		panic("")
 	}
 
-	buf := make([]float32, xsize*ysize)
+	buf := make([]float32, xSize*ySize)
 	band := C.GDALGetRasterBand(ds, 1)
-	if C.GDALRasterIO(band, C.GF_Read, 0, 0, xsize, ysize, unsafe.Pointer(&buf[0]), xsize, ysize, C.GDT_Float32, 0, 0) != C.CE_None {
+	if C.GDALRasterIO(band, C.GF_Read, 0, 0, xSize, ySize, unsafe.Pointer(&buf[0]), xSize, ySize, C.GDT_Float32, 0, 0) != C.CE_None {
 		panic("failed to read elevation buffer from file")
 	}
 
@@ -59,7 +59,7 @@ func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting fl
 	minEasting = gdalTransformArray[0] + float64(eastingOffset)
 	maxNorthing = gdalTransformArray[3] - float64(northingOffset)
 	for i := 0; i < 5001; i++ {
-		offset := colOffset + (i+rowOffset)*int(xsize)
+		offset := colOffset + (i+rowOffset)*int(xSize)
 		buffer = append(buffer, buf[offset:offset+5001])
 	}
 	return

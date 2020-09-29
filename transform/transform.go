@@ -31,7 +31,7 @@ func init() {
 	}
 }
 
-type Geopixel struct {
+type GeoPixel struct {
 	Distance float64
 	Incline  float64
 }
@@ -40,17 +40,17 @@ type Transform struct {
 	Easting     float64
 	Northing    float64
 	ElevMap     dataset.ElevationMap
-	GeopixelLen int
-	geopixelTan []float64
+	GeoPixelLen int
+	geoPixelTan []float64
 }
 
 func (t *Transform) init() {
-	if t.geopixelTan == nil {
-		t.geopixelTan = make([]float64, t.GeopixelLen, t.GeopixelLen)
+	if t.geoPixelTan == nil {
+		t.geoPixelTan = make([]float64, t.GeoPixelLen, t.GeoPixelLen)
 
-		angleStep := totalHeightAngle / float64(t.GeopixelLen)
-		for i := 0; i < t.GeopixelLen; i++ {
-			t.geopixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
+		angleStep := totalHeightAngle / float64(t.GeoPixelLen)
+		for i := 0; i < t.GeoPixelLen; i++ {
+			t.geoPixelTan[i] = math.Tan(bottomHeightAngle + float64(i) * angleStep)
 		}
 	}
 }
@@ -79,7 +79,7 @@ func (s floatStepper) step(i dataset.IntStep) float64 {
 type geoPixelBuilder struct {
 	stepLength float64
 
-	geopixels       []Geopixel
+	geopixels       []GeoPixel
 	prevElevation   float64
 	geopixelLen     int
 	geopixelTan     []float64
@@ -120,7 +120,7 @@ func (bld *geoPixelBuilder) updateState(elevation float64, i dataset.IntStep) {
 	tanX := elevationX / dist
 
 	if tanX > bld.geopixelTan[len(bld.geopixels)] {
-		pix := Geopixel{
+		pix := GeoPixel{
 			Distance: dist,
 			Incline:  (elevation - bld.prevElevation) * dataset.Unit / bld.stepLength,
 		}
@@ -311,9 +311,9 @@ func (bld *geoPixelBuilder) traceNorthSouth(elevationMap dataset.ElevationMap, e
 	}
 }
 
-//TraceDirection iterates through the ElevationMap to build a column of Geopixel that can be used to render an image.
+//TraceDirection iterates through the ElevationMap to build a column of GeoPixel that can be used to render an image.
 //The iteration starts at [t.Northing, t.Easting] and the direction is given by rad.
-func (t *Transform) TraceDirection(rad float64, pixels []Geopixel) []Geopixel {
+func (t *Transform) TraceDirection(rad float64, pixels []GeoPixel) []GeoPixel {
 	t.init()
 	northing0 := math.Round(t.Northing/dataset.Unit) * dataset.Unit
 	easting0 := math.Round(t.Easting/dataset.Unit) * dataset.Unit
@@ -325,8 +325,8 @@ func (t *Transform) TraceDirection(rad float64, pixels []Geopixel) []Geopixel {
 	bld := geoPixelBuilder{
 		geopixels:       pixels,
 		prevElevation:   t.ElevMap.Elevation(eastingStart, northingStart),
-		geopixelLen:     t.GeopixelLen,
-		geopixelTan:     t.geopixelTan,
+		geopixelLen:     t.GeoPixelLen,
+		geopixelTan:     t.geoPixelTan,
 	}
 
 	sin := math.Sin(rad) // east

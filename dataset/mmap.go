@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// Elvation16 contains elevation values stored as 1/10 meter
+// Elevation16 contains elevation values stored as 1/10 meter
 type Elevation16 int16
 
 // Elevation16Unit should be used to convert Elevation16 to meter
@@ -21,7 +21,7 @@ type mmap5000 struct {
 	NorthingMax   float64
 	MaxElevations [numberOfElevationMaplets][numberOfElevationMaplets]Elevation16
 
-	// Elvations is a matrix of ElevationMaplets
+	// Elevations is a matrix of ElevationMaplets
 	Elevations [numberOfElevationMaplets][numberOfElevationMaplets]ElevationMaplet
 }
 
@@ -31,7 +31,7 @@ type DatasetReader interface {
 	ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64)
 }
 
-const mmapstructSize = unsafe.Sizeof(mmap5000{})
+const mmapStructSize = unsafe.Sizeof(mmap5000{})
 
 // Close does nothing today
 func (m *mmap5000) Close() error {
@@ -51,15 +51,15 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 				for n := 0; n <= ElevationMapletSize; n++ {
 					col := j*ElevationMapletSize + n
 
-					floatval := buf[row][col]
-					intval := Elevation16(math.Round(float64(floatval) / Elevation16Unit))
+					floatVal := buf[row][col]
+					intVal := Elevation16(math.Round(float64(floatVal) / Elevation16Unit))
 
 					if m < ElevationMapletSize && n < ElevationMapletSize {
-						result.Elevations[i][j][m][n] = intval
+						result.Elevations[i][j][m][n] = intVal
 					}
 
-					if intval > result.MaxElevations[i][j] {
-						result.MaxElevations[i][j] = intval
+					if intVal > result.MaxElevations[i][j] {
+						result.MaxElevations[i][j] = intVal
 					}
 				}
 			}
@@ -72,30 +72,30 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 // The data can be accessed through the returned *mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
 func loadAsMmap(datasetReader DatasetReader, mmapFileDir string, fname string) (*mmap5000, error) {
-	mmapFname := mmapFileDir + "/" + path.Base(fname) + ".mmap"
+	mmapFName := mmapFileDir + "/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
 	}
 
-	mmapFileInfo, err := os.Stat(mmapFname)
-	if err != nil || fileInfo.ModTime().After(mmapFileInfo.ModTime()) || mmapFileInfo.Size() != int64(mmapstructSize) {
-		err = writeMmapped(datasetReader, fname, mmapFname)
+	mmapFileInfo, err := os.Stat(mmapFName)
+	if err != nil || fileInfo.ModTime().After(mmapFileInfo.ModTime()) || mmapFileInfo.Size() != int64(mmapStructSize) {
+		err = writeMmapped(datasetReader, fname, mmapFName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return openMmapped(mmapFname)
+	return openMmapped(mmapFName)
 }
 
 func writeMmapped(datasetReader DatasetReader, fname string, mmapFname string) error {
 	buf, e, n := datasetReader.ReadFile(fname)
-	mmapdata := toMmapStruct(buf)
-	mmapdata.EastingMin = e
-	mmapdata.NorthingMax = n
+	mmapData := toMmapStruct(buf)
+	mmapData.EastingMin = e
+	mmapData.NorthingMax = n
 
-	var bytes = (*(*[mmapstructSize]byte)(unsafe.Pointer(mmapdata)))[:]
+	var bytes = (*(*[mmapStructSize]byte)(unsafe.Pointer(mmapData)))[:]
 	return ioutil.WriteFile(mmapFname, bytes, 0644)
 }
 
@@ -107,7 +107,7 @@ func openMmapped(fname string) (*mmap5000, error) {
 		return nil, err
 	}
 
-	data, err := syscall.Mmap(int(file.Fd()), 0, int(mmapstructSize), syscall.PROT_READ, syscall.MAP_SHARED)
+	data, err := syscall.Mmap(int(file.Fd()), 0, int(mmapStructSize), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
 		return nil, err
 	}

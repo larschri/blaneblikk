@@ -57,8 +57,8 @@ func (c rgb) normalize() rgb {
 func (c rgb) getColor(alpha uint8) color.RGBA {
 	n := c.normalize()
 	return color.RGBA{
-		uint8(n.r),
-		uint8(n.g),
-		uint8(n.b),
-		alpha}
+		R: uint8(n.r),
+		G: uint8(n.g),
+		B: uint8(n.b),
+		A: alpha}
 }
