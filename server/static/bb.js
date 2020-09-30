@@ -22,6 +22,17 @@ function onMapClick(e) {
 	}
 }
 
+function setPos(latlng) {
+	map.panTo(latlng)
+	if (marker == null) {
+		marker = L.marker();
+	}
+	marker
+		.setLatLng(latlng)
+		.addTo(map);
+	marker2.remove();
+}
+
 map.on('click', onMapClick);
 
 document.querySelector('#reset').addEventListener('click', event => {

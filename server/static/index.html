@@ -12,10 +12,17 @@
 </head>
 <body>
 
-<div id="map" style="width:700px; height:500px;">
+<div id="map" style="width:700px; height:500px; float:left">
 </div>
-<button id="reset">Reset</button>
+<div style="float:left;">
+	<button id="reset">Reset</button><br/>
+	<a onclick="setPos({lat: 61.636431637677035, lng: 8.312525153160097})" href="#">Galdhøpiggen</a><br/>
+	<a onclick="setPos({lat: 61.2044606, lng: 10.5670642})" href="#">Nevelfjell</a><br/>
+	<a onclick="setPos({lat: 59.8541997, lng: 8.6492034})" href="#">Gaustatoppen</a><br/>
+</div>
+<div>
 <img id="bbImg" alt="Blåneblikk"/>
+</div>
 
 <script src="bb.js"></script>
 

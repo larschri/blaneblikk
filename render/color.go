@@ -27,23 +27,35 @@ func (c rgb) add(c2 rgb) rgb {
 	}
 }
 
-var green = rgb{
-	r: 24,
-	g: 161,
-	b: 61,
-	w: 1,
-}
+var (
+	green = rgb{
+		r: 24,
+		g: 161,
+		b: 61,
+		w: 1,
+	}
 
-var blue = rgb{
-	r: 76,
-	g: 150,
-	b: 224,
-	w: 1,
-}
+	blue = rgb{
+		r: 76,
+		g: 150,
+		b: 224,
+		w: 1,
+	}
 
-var black = rgb{0, 0, 0, 1}
+	black = rgb{
+		r: 0,
+		g: 0,
+		b: 0,
+		w: 1,
+	}
 
-var white = rgb{255, 255, 255, 1}
+	white = rgb{
+		r: 255,
+		g: 255,
+		b: 255,
+		w: 1,
+	}
+)
 
 func (c rgb) normalize() rgb {
 	return rgb{

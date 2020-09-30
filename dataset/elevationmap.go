@@ -1,3 +1,6 @@
+// Package dataset implements access to elevation data stored in files.
+//
+// Elevation data is stored in files that are mapped into memory using mmap for fast access.
 package dataset
 
 import (
@@ -31,7 +34,7 @@ type ElevationMap struct {
 type ElevationMaplet [ElevationMapletSize][ElevationMapletSize]Elevation16
 
 // Offsets returns minimum easting and maximum northing
-func (em *ElevationMap) Offsets() (float64, float64) {
+func (em *ElevationMap) Offsets() (minEasting float64, maxNorthing float64) {
 	return em.minEasting, em.maxNorthing
 }
 
@@ -47,7 +50,7 @@ func index2(x IntStep) int {
 	return int((x / ElevationMapletSize) % numberOfElevationMaplets)
 }
 
-// MaxElevation returns the maximum elevation in the small
+// MaxElevation returns the maximum elevation in the ElevationMaplet
 func (em *ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	if e < 0 || n < 0 {
 		return -1
@@ -61,6 +64,7 @@ func (em *ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	return float64(mmapStruct.MaxElevations[index2(n)][index2(e)]) / Unit
 }
 
+// LookupElevationMaplet returns the ElevationMaplet for the given easting/northing
 func (em *ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMaplet {
 	if e < 0 || n < 0 {
 		return nil
@@ -71,9 +75,10 @@ func (em *ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMa
 		return nil
 	}
 
-	return (*ElevationMaplet)(&mmapStruct.Elevations[index2(n)][index2(e)])
+	return &mmapStruct.Elevations[index2(n)][index2(e)]
 }
 
+// Elevation returns the elevation at a given easting/northing
 func (em *ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 	mmapStruct := em.lookupMmapStruct(int(easting/bigSquareSize), int(northing/bigSquareSize))
 	if mmapStruct == nil {
@@ -82,7 +87,8 @@ func (em *ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
 	return float64(mmapStruct.Elevations[index2(northing)][index2(easting)][northing%ElevationMapletSize][easting%ElevationMapletSize]) * Elevation16Unit
 }
 
-func LoadFiles(datasetReader DatasetReader, mmapFileDir string, fNames []string) (ElevationMap, error) {
+// LoadFiles loads the given fNames and returns it as an ElevationMap
+func LoadFiles(datasetReader Reader, mmapFileDir string, fNames []string) (ElevationMap, error) {
 	mmapStructs := []*mmap5000{}
 	allElevations := ElevationMap{
 		minEasting:  math.MaxFloat64,
@@ -105,15 +111,6 @@ func LoadFiles(datasetReader DatasetReader, mmapFileDir string, fNames []string)
 		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / (bigSquareSize * Unit)
 		allElevations.mmapStructs[x][y] = mmapStruct
 	}
-	for _, xx := range allElevations.mmapStructs {
-		for _, yy := range xx {
-			if yy != nil {
-				fmt.Print("X")
-			} else {
-				fmt.Print("-")
-			}
-		}
-		fmt.Println()
-	}
+
 	return allElevations, nil
 }
