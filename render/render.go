@@ -64,8 +64,8 @@ func (view Renderer) CreateImage() *image.RGBA {
 	geoPixelLen := int(transform.TotalHeightAngle*float64(view.Columns)/view.Width) * subPixels
 
 	img := image.NewRGBA(image.Rectangle{
-		image.Point{X: 0, Y: 0},
-		image.Point{X: view.Columns, Y: geoPixelLen / subPixels},
+		Min: image.Point{X: 0, Y: 0},
+		Max: image.Point{X: view.Columns, Y: geoPixelLen / subPixels},
 	})
 
 	trans2 := transform.Transform{

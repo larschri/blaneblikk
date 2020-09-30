@@ -1,3 +1,6 @@
+// Package dataset implements access to elevation data stored in files.
+//
+// Elevation data is stored in files that are mapped into memory using mmap for fast access.
 package dataset
 
 import (
