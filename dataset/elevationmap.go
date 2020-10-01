@@ -34,7 +34,7 @@ type ElevationMap struct {
 type ElevationMaplet [ElevationMapletSize][ElevationMapletSize]Elevation16
 
 // Offsets returns minimum easting and maximum northing
-func (em *ElevationMap) Offsets() (float64, float64) {
+func (em *ElevationMap) Offsets() (minEasting float64, maxNorthing float64) {
 	return em.minEasting, em.maxNorthing
 }
 
@@ -50,7 +50,7 @@ func index2(x IntStep) int {
 	return int((x / ElevationMapletSize) % numberOfElevationMaplets)
 }
 
-// MaxElevation returns the maximum elevation in the small
+// MaxElevation returns the maximum elevation in the ElevationMaplet
 func (em *ElevationMap) MaxElevation(e IntStep, n IntStep) float64 {
 	if e < 0 || n < 0 {
 		return -1

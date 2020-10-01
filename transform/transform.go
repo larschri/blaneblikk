@@ -52,6 +52,9 @@ func (t *Transform) init() {
 		for i := 0; i < t.GeoPixelLen; i++ {
 			t.geoPixelTan[i] = math.Tan(bottomHeightAngle + float64(i)*angleStep)
 		}
+
+		// terminate with infinity to prevent writes outside bounds
+		t.geoPixelTan[t.GeoPixelLen - 1] = math.Inf(1)
 	}
 }
 
