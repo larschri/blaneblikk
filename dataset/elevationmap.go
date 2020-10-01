@@ -74,7 +74,7 @@ func (em *ElevationMap) LookupElevationMaplet(e IntStep, n IntStep) *ElevationMa
 		return nil
 	}
 
-	return (*ElevationMaplet)(&mmapStruct.Elevations[index2(n)][index2(e)])
+	return &mmapStruct.Elevations[index2(n)][index2(e)]
 }
 
 func (em *ElevationMap) Elevation(easting IntStep, northing IntStep) float64 {
