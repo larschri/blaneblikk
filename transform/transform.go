@@ -54,7 +54,7 @@ func (t *Transform) init() {
 		}
 
 		// terminate with infinity to prevent writes outside bounds
-		t.geoPixelTan[t.GeoPixelLen - 1] = math.Inf(1)
+		t.geoPixelTan[t.GeoPixelLen-1] = math.Inf(1)
 	}
 }
 
