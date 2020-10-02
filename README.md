@@ -1,16 +1,22 @@
 # Blåneblikk
-Blåne - noe som ligger så langt borte at det fortoner seg blått mot fjell enda lenger borte, eller mot synsranden.
 
+Render terrain scenery using elevation data from [Kartverket](https://www.kartverket.no/data/).
 
+> * _blåne (norwegian) - something that is so far away that it appears blue against mountains even further away, or towards the horizon._
+> * _blikk (norwegian) - view_
 
-# Setup
+This software renders PNG images of scenery as
+seen from a given viewpoint in the terrain.
+A web server keeps elevation data in (virtual) memory
+for efficient access, and renders images when requested.
+There is also a crude web interface that allows selecting
+viewpoint and direction of sight by clicking a map.
 
-## Gdal
-Install gdal on your system. Headers must be available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
+## Setup
 
-## DEM data from kartverket
-
-Sign up at kartverket.no and download DEM files from dataset "DTM 10 Terrengmodell (UTM32)" into sub-folder _dem-files_.
+* Install [GDAL](https://gdal.org/) and make headers available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
+* Sign up at [Kartverket](https://www.kartverket.no/data/) and download USGS DEM files from data set "DTM 10 Terrengmodell (UTM32)" into sub-folder _dem-files_.
+* Install [Go](https://golang.org/doc/install)
 
 ## Getting started
 
