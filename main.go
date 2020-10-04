@@ -52,14 +52,20 @@ func requestToRenderer(req *http.Request) render.Renderer {
 func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 	if err != nil {
 		w.WriteHeader(400)
-		w.Write([]byte(err.Error()))
+		_, err := w.Write([]byte(err.Error()))
+		if err != nil {
+			log.Printf("failed to write HTTP 400 response: %v", err)
+		}
 		return
 	}
 
 	bytes, err := json.Marshal(result)
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
+		_, err := w.Write([]byte(err.Error()))
+		if err != nil {
+			log.Printf("failed to write HTTP 500 response: %v", err)
+		}
 		return
 	}
 
@@ -87,7 +93,10 @@ func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 func bbHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
 	renderer := requestToRenderer(req)
-	(&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
+	err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
+	if err != nil {
+		log.Printf("failed during image encoding: %v", err)
+	}
 }
 
 func main() {

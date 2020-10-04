@@ -101,11 +101,10 @@ func writeMmapped(datasetReader DatasetReader, fname string, mmapFname string) e
 
 func openMmapped(fname string) (*mmap5000, error) {
 	file, err := os.OpenFile(fname, os.O_RDONLY, 0)
-	defer file.Close()
-
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
 	data, err := syscall.Mmap(int(file.Fd()), 0, int(mmapStructSize), syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {

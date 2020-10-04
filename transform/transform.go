@@ -46,7 +46,7 @@ type Transform struct {
 
 func (t *Transform) init() {
 	if t.geoPixelTan == nil {
-		t.geoPixelTan = make([]float64, t.GeoPixelLen, t.GeoPixelLen)
+		t.geoPixelTan = make([]float64, t.GeoPixelLen)
 
 		angleStep := totalHeightAngle / float64(t.GeoPixelLen)
 		for i := 0; i < t.GeoPixelLen; i++ {
