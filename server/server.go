@@ -14,7 +14,10 @@ import (
 	"strconv"
 )
 
-var elevmap dataset.ElevationMap
+type Server struct {
+	ElevationMap dataset.ElevationMap
+	HTTPServer http.Server
+}
 
 func getFloatParam(req *http.Request, param string) float64 {
 	f, err := strconv.ParseFloat(req.URL.Query().Get(param), 64)
@@ -32,7 +35,7 @@ func getIntParam(req *http.Request, param string) int {
 	return int(num)
 }
 
-func requestToRenderer(req *http.Request) render.Renderer {
+func (srv *Server) requestToRenderer(req *http.Request) render.Renderer {
 	width := math.Pi * 2 / 64
 	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
 	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
@@ -43,7 +46,7 @@ func requestToRenderer(req *http.Request) render.Renderer {
 		Columns:    800,
 		Easting:    easting,
 		Northing:   northing,
-		Elevations: elevmap,
+		Elevations: srv.ElevationMap,
 	}
 }
 
@@ -74,13 +77,15 @@ func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 	}
 }
 
-func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
-	renderer := requestToRenderer(req)
+func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request) {
+	renderer := srv.requestToRenderer(req)
+
 	pos, err := renderer.PixelToLatLng(getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
 	if err != nil {
 		writeJSONResponse(w, nil, err)
 		return
 	}
+
 	lat, lng := dtm10utm32.DTM10UTM32Dataset.ITranslate(pos.Easting, pos.Northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
@@ -88,28 +93,28 @@ func pixelLatLngHandler(w http.ResponseWriter, req *http.Request) {
 	}, nil)
 }
 
-func bbHandler(w http.ResponseWriter, req *http.Request) {
+func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	renderer := requestToRenderer(req)
+	renderer := srv.requestToRenderer(req)
 	err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
 	if err != nil {
 		log.Printf("failed during image encoding: %v", err)
 	}
 }
 
-func Serve(emap dataset.ElevationMap, hostPort string) {
-	elevmap = emap
-
-	http.HandleFunc("/bb/pixelLatLng", pixelLatLngHandler)
-	http.HandleFunc("/bb", bbHandler)
-	http.Handle("/", http.FileServer(http.Dir("server/static")))
-
+func (srv *Server) Serve(hostPort string) error {
 	listener, err := net.Listen("tcp", hostPort)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	log.Print("Listening to " + hostPort)
 
-	_ = http.Serve(listener, nil)
+	m := http.NewServeMux()
+	m.HandleFunc("/bb/pixelLatLng", srv.handlePixelToLatLng)
+	m.HandleFunc("/bb", srv.handleImageRequest)
+	m.Handle("/", http.FileServer(http.Dir("server/static")))
+
+	srv.HTTPServer.Handler = m
+	return srv.HTTPServer.Serve(listener)
 }

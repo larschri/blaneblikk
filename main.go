@@ -19,10 +19,16 @@ func main() {
 		panic(err)
 	}
 
-	elevmap, err := dataset.LoadFiles(&dtm10utm32.DTM10UTM32Dataset, *mmapFileDir, files)
+	elevationMap, err := dataset.LoadFiles(&dtm10utm32.DTM10UTM32Dataset, *mmapFileDir, files)
 	if err != nil {
 		panic(err)
 	}
 
-	server.Serve(elevmap, *hostPort)
+	s := server.Server{
+		ElevationMap: elevationMap,
+	}
+
+	if err = s.Serve(*hostPort); err != nil {
+		panic(err)
+	}
 }
