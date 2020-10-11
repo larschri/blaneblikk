@@ -32,7 +32,7 @@ Then start the web server
 Then visit this URL to get a view from Galdhøpiggen towards Hurrungane
 `http://localhost:4242/bb?lat0=61.63637302336104&lng0=8.312476873397829&lat1=61.461421091200464&lng1=7.8714895248413095`
 
-![View from Galdhøpiggen towards Hurrungane](https://github.com/larschri/blaneblikk/blob/wip-transform/htdocs/example.png?raw=true)
+![View from Galdhøpiggen towards Hurrungane](https://github.com/larschri/blaneblikk/blob/wip-something/server/static/example.png?raw=true)
 
 ©Kartverket
 
