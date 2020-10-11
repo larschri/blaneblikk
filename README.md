@@ -35,3 +35,12 @@ Then visit this URL to get a view from Galdhøpiggen towards Hurrungane
 ![View from Galdhøpiggen towards Hurrungane](https://github.com/larschri/blaneblikk/blob/wip-transform/htdocs/example.png?raw=true)
 
 ©Kartverket
+
+## Simplistic geometrical model
+
+[Universal Transverse Mercator coordinate system](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)
+is defined to have units of one meter in the projected plane,
+and close to one meter in the terrain.
+This software uses easting and northing from the projected plane for
+calculations, not the true coordinates from the terrain. This will
+cause some distortion depending on location.
