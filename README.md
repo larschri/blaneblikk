@@ -39,7 +39,7 @@ Then visit this URL to get a view from Galdhøpiggen towards Hurrungane
 ## Simplistic geometrical model
 
 [Universal Transverse Mercator coordinate system](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)
-is defined to have units of one meter in the projected plane,
+has units of one meter in the projected plane,
 and close to one meter in the terrain.
 This software uses easting and northing from the projected plane for
 calculations, not the true coordinates from the terrain. This will

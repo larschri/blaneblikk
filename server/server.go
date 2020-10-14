@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/larschri/blaneblikk/dataset"
 	"github.com/larschri/blaneblikk/dataset/dtm10utm32"
 	"github.com/larschri/blaneblikk/render"
@@ -16,30 +17,36 @@ import (
 
 type Server struct {
 	ElevationMap dataset.ElevationMap
-	HTTPServer http.Server
+	HTTPServer   http.Server
 }
 
-func getFloatParam(req *http.Request, param string) float64 {
-	f, err := strconv.ParseFloat(req.URL.Query().Get(param), 64)
+func (srv *Server) requestToRenderer(req *http.Request) (render.Renderer, error) {
+	lat0, err := strconv.ParseFloat(req.URL.Query().Get("lat0"), 64)
 	if err != nil {
-		panic(err)
+		return render.Renderer{}, fmt.Errorf("failed to parse lat0")
 	}
-	return f
-}
 
-func getIntParam(req *http.Request, param string) int {
-	num, err := strconv.ParseInt(req.URL.Query().Get(param), 10, 32)
+	lng0, err := strconv.ParseFloat(req.URL.Query().Get("lng0"), 64)
 	if err != nil {
-		panic(err)
+		return render.Renderer{}, fmt.Errorf("failed to parse lng0")
 	}
-	return int(num)
-}
 
-func (srv *Server) requestToRenderer(req *http.Request) render.Renderer {
+	lat1, err := strconv.ParseFloat(req.URL.Query().Get("lat1"), 64)
+	if err != nil {
+		return render.Renderer{}, fmt.Errorf("failed to parse lat1")
+	}
+
+	lng1, err := strconv.ParseFloat(req.URL.Query().Get("lng1"), 64)
+	if err != nil {
+		return render.Renderer{}, fmt.Errorf("failed to parse lng1")
+	}
+
+	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(lat0, lng0)
+	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(lat1, lng1)
+
 	width := math.Pi * 2 / 64
-	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat0"), getFloatParam(req, "lng0"))
-	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(getFloatParam(req, "lat1"), getFloatParam(req, "lng1"))
 	angle := -math.Atan2(easting-easting1, northing1-northing)
+
 	return render.Renderer{
 		Start:      angle - width/2,
 		Width:      width,
@@ -47,7 +54,7 @@ func (srv *Server) requestToRenderer(req *http.Request) render.Renderer {
 		Easting:    easting,
 		Northing:   northing,
 		Elevations: srv.ElevationMap,
-	}
+	}, nil
 }
 
 func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
@@ -73,14 +80,30 @@ func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(bytes)
 	if err != nil {
-		panic(err)
+		log.Printf("failed to write HTTP response: %v", err)
 	}
 }
 
 func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request) {
-	renderer := srv.requestToRenderer(req)
+	renderer, err := srv.requestToRenderer(req)
+	if err != nil {
+		writeJSONResponse(w, nil, err)
+		return
+	}
 
-	pos, err := renderer.PixelToLatLng(getIntParam(req, "offsetX"), getIntParam(req, "offsetY"))
+	offsetX, err := strconv.ParseInt(req.URL.Query().Get("offsetX"), 10, 32)
+	if err != nil {
+		writeJSONResponse(w, nil, fmt.Errorf("failed to parse 'offsetX': %w", err))
+		return
+	}
+
+	offsetY, err := strconv.ParseInt(req.URL.Query().Get("offsetY"), 10, 32)
+	if err != nil {
+		writeJSONResponse(w, nil, fmt.Errorf("failed to parse 'offsetY': %w", err))
+		return
+	}
+
+	pos, err := renderer.PixelToLatLng(int(offsetX), int(offsetY))
 	if err != nil {
 		writeJSONResponse(w, nil, err)
 		return
@@ -95,8 +118,14 @@ func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request)
 
 func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "image/png")
-	renderer := srv.requestToRenderer(req)
-	err := (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
+
+	renderer, err := srv.requestToRenderer(req)
+	if err != nil {
+		writeJSONResponse(w, nil, err)
+		return
+	}
+
+	err = (&png.Encoder{CompressionLevel: png.BestSpeed}).Encode(w, renderer.CreateImage())
 	if err != nil {
 		log.Printf("failed during image encoding: %v", err)
 	}
