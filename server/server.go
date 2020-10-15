@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/larschri/blaneblikk/dataset"
-	"github.com/larschri/blaneblikk/dataset/dtm10utm32"
 	"github.com/larschri/blaneblikk/render"
 	"image/png"
 	"log"
@@ -41,8 +40,8 @@ func (srv *Server) requestToRenderer(req *http.Request) (render.Renderer, error)
 		return render.Renderer{}, fmt.Errorf("failed to parse lng1")
 	}
 
-	easting, northing := dtm10utm32.DTM10UTM32Dataset.Translate(lat0, lng0)
-	easting1, northing1 := dtm10utm32.DTM10UTM32Dataset.Translate(lat1, lng1)
+	easting, northing := dataset.DTM10UTM32Dataset.Translate(lat0, lng0)
+	easting1, northing1 := dataset.DTM10UTM32Dataset.Translate(lat1, lng1)
 
 	width := math.Pi * 2 / 64
 	angle := -math.Atan2(easting-easting1, northing1-northing)
@@ -109,7 +108,7 @@ func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	lat, lng := dtm10utm32.DTM10UTM32Dataset.ITranslate(pos.Easting, pos.Northing)
+	lat, lng := dataset.DTM10UTM32Dataset.ITranslate(pos.Easting, pos.Northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,

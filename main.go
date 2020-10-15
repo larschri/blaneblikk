@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/larschri/blaneblikk/dataset"
-	"github.com/larschri/blaneblikk/dataset/dtm10utm32"
 	"github.com/larschri/blaneblikk/server"
 	_ "net/http/pprof"
 	"path/filepath"
@@ -19,7 +18,7 @@ func main() {
 		panic(err)
 	}
 
-	elevationMap, err := dataset.LoadFiles(&dtm10utm32.DTM10UTM32Dataset, *mmapFileDir, files)
+	elevationMap, err := dataset.LoadFiles(&dataset.DTM10UTM32Dataset, *mmapFileDir, files)
 	if err != nil {
 		panic(err)
 	}
