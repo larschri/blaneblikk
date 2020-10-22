@@ -13,6 +13,6 @@ SECONDS=15
 
 ) &
 
-docker run --network="host" uber/go-torch -u http://localhost:${PORT}/debug/pprof -p -t=$SECONDS > $OUTPUT
+docker run --rm --network="host" uber/go-torch -u http://localhost:${PORT}/debug/pprof -p -t=$SECONDS > $OUTPUT
 
 kill -- -$$
