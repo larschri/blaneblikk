@@ -16,7 +16,7 @@ import (
 
 type Server struct {
 	ElevationMap dataset.ElevationMap
-	HTTPServer   http.Server
+	Listener     net.Listener
 }
 
 func (srv *Server) requestToRenderer(req *http.Request) (render.Renderer, error) {
@@ -130,19 +130,14 @@ func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (srv *Server) Serve(hostPort string) error {
-	listener, err := net.Listen("tcp", hostPort)
-	if err != nil {
-		return err
-	}
-
-	log.Print("Listening to " + hostPort)
-
+func (srv *Server) Serve() error {
 	m := http.NewServeMux()
 	m.HandleFunc("/bb/pixelLatLng", srv.handlePixelToLatLng)
 	m.HandleFunc("/bb", srv.handleImageRequest)
 	m.Handle("/", http.FileServer(http.Dir("server/static")))
 
-	srv.HTTPServer.Handler = m
-	return srv.HTTPServer.Serve(listener)
+	server := http.Server{
+		Handler: m,
+	}
+	return server.Serve(srv.Listener)
 }
