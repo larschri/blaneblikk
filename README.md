@@ -36,11 +36,9 @@ Then visit this URL to get a view from Galdhøpiggen towards Hurrungane
 
 ©Kartverket
 
-## Simplistic geometrical model
+## Cartesian geometry
 
-[Universal Transverse Mercator coordinate system](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)
-has units of one meter in the projected plane,
-and close to one meter in the terrain.
-This software uses easting and northing from the projected plane for
-calculations, not the true coordinates from the terrain. This will
-cause some distortion depending on location.
+The geometry is based on cartesian coordinates in metric units (meters) as defined by the
+[Universal Transverse Mercator coordinate system](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system).
+Terrain far away are lowered to achieve a earth curvature effect.
+This is a simplistic geometrical model that will cause some distortion depending on location.
