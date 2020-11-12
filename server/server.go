@@ -102,13 +102,13 @@ func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	pos, err := renderer.PixelToLatLng(int(offsetX), int(offsetY))
+	easting, northing, err := renderer.PixelToUTM(int(offsetX), int(offsetY))
 	if err != nil {
 		writeJSONResponse(w, nil, err)
 		return
 	}
 
-	lat, lng := dataset.DTM10UTM32Dataset.ITranslate(pos.Easting, pos.Northing)
+	lat, lng := dataset.DTM10UTM32Dataset.ITranslate(easting, northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,

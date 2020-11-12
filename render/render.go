@@ -30,11 +30,6 @@ func getRGB(b transform.GeoPixel) rgb {
 	return color1.add(white.scale((b.Distance - fadeFromDistance) / fadeFromDistance)).normalize()
 }
 
-type Position struct {
-	Northing float64
-	Easting  float64
-}
-
 func (r Renderer) transform() transform.Transform {
 	return transform.Transform{
 		Easting:     math.Round(r.Easting/10) * 10,
@@ -45,7 +40,7 @@ func (r Renderer) transform() transform.Transform {
 }
 
 // PixelToLatLng convert pixel position to lat/long
-func (r Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
+func (r Renderer) PixelToUTM(posX int, posY int) (easting float64, northing float64, err error) {
 	trans := r.transform()
 
 	rad := r.Start + (float64(posX) * r.Width / float64(r.Columns))
@@ -53,14 +48,12 @@ func (r Renderer) PixelToLatLng(posX int, posY int) (Position, error) {
 
 	idx := trans.GeoPixelLen - posY*subPixels
 	if idx >= len(geoPixels) {
-		return Position{}, fmt.Errorf("invalid position")
+		return math.NaN(), math.NaN(), fmt.Errorf("invalid position")
 	}
 
-	return Position{
-		Northing: trans.Northing + math.Cos(rad)*geoPixels[idx].Distance,
-		Easting:  trans.Easting + math.Sin(rad)*geoPixels[idx].Distance,
-	}, nil
-
+	easting = trans.Easting + math.Sin(rad)*geoPixels[idx].Distance
+	northing = trans.Northing + math.Cos(rad)*geoPixels[idx].Distance
+	return
 }
 
 // CreateImage builds the image from the elevation data
