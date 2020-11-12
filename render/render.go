@@ -39,7 +39,7 @@ func (r Renderer) transform() transform.Transform {
 	}
 }
 
-// PixelToLatLng convert pixel position to lat/long
+// PixelToLatLng convert pixel position to UTM easting+northing
 func (r Renderer) PixelToUTM(posX int, posY int) (easting float64, northing float64, err error) {
 	trans := r.transform()
 

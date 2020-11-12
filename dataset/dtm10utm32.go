@@ -32,7 +32,7 @@ func init() {
 }
 
 // Translate translates lat/lng to easting/northing
-func (dtm *DTM10UTM32) Translate(lat float64, lng float64) (easting float64, northing float64) {
+func (dtm *DTM10UTM32) LatLngToUTM(lat float64, lng float64) (easting float64, northing float64) {
 	xs := []float64{lng}
 	ys := []float64{lat}
 	zs := []float64{1}
@@ -41,7 +41,7 @@ func (dtm *DTM10UTM32) Translate(lat float64, lng float64) (easting float64, nor
 }
 
 // ITranslate translates easting/northing to lat/lng
-func (dtm *DTM10UTM32) ITranslate(easting float64, northing float64) (lat float64, lng float64) {
+func (dtm *DTM10UTM32) UTMToLatLng(easting float64, northing float64) (lat float64, lng float64) {
 	xs := []float64{easting}
 	ys := []float64{northing}
 	zs := []float64{1}

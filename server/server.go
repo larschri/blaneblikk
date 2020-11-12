@@ -40,8 +40,8 @@ func (srv *Server) requestToRenderer(req *http.Request) (render.Renderer, error)
 		return render.Renderer{}, fmt.Errorf("failed to parse lng1")
 	}
 
-	easting, northing := dataset.DTM10UTM32Dataset.Translate(lat0, lng0)
-	easting1, northing1 := dataset.DTM10UTM32Dataset.Translate(lat1, lng1)
+	easting, northing := dataset.DTM10UTM32Dataset.LatLngToUTM(lat0, lng0)
+	easting1, northing1 := dataset.DTM10UTM32Dataset.LatLngToUTM(lat1, lng1)
 
 	width := math.Pi * 2 / 64
 	angle := -math.Atan2(easting-easting1, northing1-northing)
@@ -108,7 +108,7 @@ func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	lat, lng := dataset.DTM10UTM32Dataset.ITranslate(easting, northing)
+	lat, lng := dataset.DTM10UTM32Dataset.UTMToLatLng(easting, northing)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,
