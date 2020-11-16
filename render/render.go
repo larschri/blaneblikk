@@ -21,15 +21,6 @@ type Renderer struct {
 const fadeFromDistance = 70000.0
 const subPixels = 3
 
-func getRGB(b transform.GeoPixel) rgb {
-	incline := math.Max(0, math.Min(1, b.Incline/20))
-	color1 := green.add(blue.scale(b.Distance / 10000)).normalize().add(black.scale(incline)).normalize()
-	if b.Distance < fadeFromDistance {
-		return color1
-	}
-	return color1.add(white.scale((b.Distance - fadeFromDistance) / fadeFromDistance)).normalize()
-}
-
 func (r Renderer) transform() transform.Transform {
 	return transform.Transform{
 		Easting:     math.Round(r.Easting/10) * 10,
@@ -76,11 +67,11 @@ func (r Renderer) CreateImage() *image.RGBA {
 			l = trans.GeoPixelLen
 		}
 		for j := 0; j < l; j += subPixels {
-			c := getRGB(geoPixels[j])
+			c := gradient1.getRGB(geoPixels[j])
 			alpha := 255 / subPixels
 			for k := 1; k < subPixels; k++ {
 				if j+k < l {
-					c = c.add(getRGB(geoPixels[j+k]))
+					c = c.add(gradient1.getRGB(geoPixels[j+k]))
 					alpha += 255 / subPixels
 				}
 			}
