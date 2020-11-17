@@ -108,15 +108,6 @@ func LoadFiles(datasetReader DatasetReader, mmapFileDir string, fNames []string)
 		y := (int(allElevations.maxNorthing) - int(mmapStruct.NorthingMax)) / (bigSquareSize * Unit)
 		allElevations.mmapStructs[x][y] = mmapStruct
 	}
-	for _, xx := range allElevations.mmapStructs {
-		for _, yy := range xx {
-			if yy != nil {
-				fmt.Print("X")
-			} else {
-				fmt.Print("-")
-			}
-		}
-		fmt.Println()
-	}
+
 	return allElevations, nil
 }
