@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"path/filepath"
 
 	"github.com/larschri/blaneblikk/dataset"
@@ -34,6 +37,22 @@ func newServer(demFileDir, mmapFileDir, hostPort string) (*server.Server, error)
 
 }
 
+// withCancelOnSignal create a context that is cancelled when the process is interrupted.
+// The parent parameter is used as the parent context.
+func withCancelOnInterrupt(parent context.Context) context.Context {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	ctx, cancel := context.WithCancel(parent)
+
+	go func() {
+		<-c
+		cancel()
+	}()
+
+	return ctx
+}
+
 func main() {
 	hostPort := flag.String("address", "localhost:8090", "http 'host:port' for the server")
 	demFileDir := flag.String("demfiles", "dem-files", "directory with *.dem files")
@@ -45,7 +64,9 @@ func main() {
 		panic(err)
 	}
 
-	if err = s.Serve(); err != nil {
+	ctx := withCancelOnInterrupt(context.Background())
+
+	if err = s.Serve(ctx); err != nil {
 		panic(err)
 	}
 }

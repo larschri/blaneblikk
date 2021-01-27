@@ -1,10 +1,9 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/larschri/blaneblikk/dataset"
-	"github.com/larschri/blaneblikk/render"
 	"image/png"
 	"log"
 	"math"
@@ -12,6 +11,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"strconv"
+	"time"
+
+	"github.com/larschri/blaneblikk/dataset"
+	"github.com/larschri/blaneblikk/render"
 )
 
 type Server struct {
@@ -130,7 +133,20 @@ func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (srv *Server) Serve() error {
+// shutdownWhenDone invokes http.Server.Shutdown when the given context is cancelled.
+// This function will block until context cancellation.
+func shutdownWhenDone(ctx context.Context, server *http.Server) {
+	log.Print("server started")
+	<-ctx.Done()
+
+	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	log.Print("teminating server")
+	server.Shutdown(c)
+}
+
+func (srv *Server) Serve(ctx context.Context) error {
 	m := http.NewServeMux()
 	m.HandleFunc("/bb/pixelLatLng", srv.handlePixelToLatLng)
 	m.HandleFunc("/bb", srv.handleImageRequest)
@@ -139,5 +155,15 @@ func (srv *Server) Serve() error {
 	server := http.Server{
 		Handler: m,
 	}
-	return server.Serve(srv.Listener)
+
+	go shutdownWhenDone(ctx, &server)
+
+	err := server.Serve(srv.Listener)
+
+	if ctx.Done() == nil {
+		return err
+	}
+
+	log.Print("server stopped")
+	return nil
 }
