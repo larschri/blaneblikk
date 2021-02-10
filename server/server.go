@@ -59,23 +59,10 @@ func (srv *Server) requestToRenderer(req *http.Request) (render.Renderer, error)
 	}, nil
 }
 
-func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
-	if err != nil {
-		w.WriteHeader(400)
-		_, err := w.Write([]byte(err.Error()))
-		if err != nil {
-			log.Printf("failed to write HTTP 400 response: %v", err)
-		}
-		return
-	}
-
+func writeJSONResponse(w http.ResponseWriter, result interface{}) {
 	bytes, err := json.Marshal(result)
 	if err != nil {
-		w.WriteHeader(500)
-		_, err := w.Write([]byte(err.Error()))
-		if err != nil {
-			log.Printf("failed to write HTTP 500 response: %v", err)
-		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -89,25 +76,25 @@ func writeJSONResponse(w http.ResponseWriter, result interface{}, err error) {
 func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request) {
 	renderer, err := srv.requestToRenderer(req)
 	if err != nil {
-		writeJSONResponse(w, nil, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	offsetX, err := strconv.ParseInt(req.URL.Query().Get("offsetX"), 10, 32)
 	if err != nil {
-		writeJSONResponse(w, nil, fmt.Errorf("failed to parse 'offsetX': %w", err))
+		http.Error(w, fmt.Sprintf("failed to parse 'offsetX' %v", err), http.StatusBadRequest)
 		return
 	}
 
 	offsetY, err := strconv.ParseInt(req.URL.Query().Get("offsetY"), 10, 32)
 	if err != nil {
-		writeJSONResponse(w, nil, fmt.Errorf("failed to parse 'offsetY': %w", err))
+		http.Error(w, fmt.Sprintf("failed to parse 'offsetY' %v", err), http.StatusBadRequest)
 		return
 	}
 
 	easting, northing, err := renderer.PixelToUTM(int(offsetX), int(offsetY))
 	if err != nil {
-		writeJSONResponse(w, nil, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -115,7 +102,7 @@ func (srv *Server) handlePixelToLatLng(w http.ResponseWriter, req *http.Request)
 	writeJSONResponse(w, map[string]interface{}{
 		"lat": lat,
 		"lng": lng,
-	}, nil)
+	})
 }
 
 func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) {
@@ -123,7 +110,7 @@ func (srv *Server) handleImageRequest(w http.ResponseWriter, req *http.Request) 
 
 	renderer, err := srv.requestToRenderer(req)
 	if err != nil {
-		writeJSONResponse(w, nil, err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
