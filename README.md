@@ -14,7 +14,7 @@ viewpoint and direction of sight by clicking a map.
 
 ## Setup
 
-* Install [GDAL](https://gdal.org/) >= v3.0 and make headers available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
+* Install [GDAL](https://gdal.org/) ≥ v3.0 and make headers available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
 * Sign up at [Kartverket](https://www.kartverket.no/data/) and download USGS DEM files from data set "DTM 10 Terrengmodell (UTM32)" into sub-folder _dem-files_.
 * Install [Go](https://golang.org/doc/install)
 
@@ -23,8 +23,8 @@ viewpoint and direction of sight by clicking a map.
 At https://kartkatalog.geonorge.no/ locate dataset "DTM 10 Terrengmodell (UTM 32)".
 
 To get started, download these two files:
-* 6804_2_10m_z32.dem
-* 6804_3_10m_z32.dem
+* 6804\_2\_10m\_z32.dem
+* 6804\_3\_10m\_z32.dem
 
 Then start the web server
 `go run . --address=localhost:4242 --demfiles=dem-files --mmapfiles=/tmp`
