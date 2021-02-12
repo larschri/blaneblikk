@@ -14,7 +14,7 @@ viewpoint and direction of sight by clicking a map.
 
 ## Setup
 
-* Install [GDAL](https://gdal.org/) and make headers available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
+* Install [GDAL](https://gdal.org/) >= v3.0 and make headers available in sub-folder _gdal_. On linux: `ln -s /usr/include/gdal gdal`.
 * Sign up at [Kartverket](https://www.kartverket.no/data/) and download USGS DEM files from data set "DTM 10 Terrengmodell (UTM32)" into sub-folder _dem-files_.
 * Install [Go](https://golang.org/doc/install)
 
