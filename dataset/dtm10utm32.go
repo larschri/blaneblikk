@@ -28,16 +28,14 @@ func init() {
 	UTM32SpatialReference := C.OSRNewSpatialReference(UTM32WKT)
 	LatLngSpatialReference := C.OSRCloneGeogCS(UTM32SpatialReference)
 
-	C.OSRSetAxisMappingStrategy(LatLngSpatialReference, C.OAMS_TRADITIONAL_GIS_ORDER)
-
 	DTM10UTM32Dataset.trans = C.OCTNewCoordinateTransformation(LatLngSpatialReference, UTM32SpatialReference)
 	DTM10UTM32Dataset.itrans = C.OCTNewCoordinateTransformation(UTM32SpatialReference, LatLngSpatialReference)
 }
 
 // Translate translates lat/lng to easting/northing
 func (dtm *DTM10UTM32) LatLngToUTM(lat float64, lng float64) (easting float64, northing float64) {
-	xs := []float64{lng}
-	ys := []float64{lat}
+	xs := []float64{lat}
+	ys := []float64{lng}
 	zs := []float64{1}
 	C.OCTTransform(dtm.trans, C.int(1), (*C.double)(&xs[0]), (*C.double)(&ys[0]), (*C.double)(&zs[0]))
 	return xs[0], ys[0]
@@ -49,7 +47,7 @@ func (dtm *DTM10UTM32) UTMToLatLng(easting float64, northing float64) (lat float
 	ys := []float64{northing}
 	zs := []float64{1}
 	C.OCTTransform(dtm.itrans, C.int(1), (*C.double)(&xs[0]), (*C.double)(&ys[0]), (*C.double)(&zs[0]))
-	return ys[0], xs[0]
+	return xs[0], ys[0]
 }
 
 func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
