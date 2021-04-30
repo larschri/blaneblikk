@@ -25,8 +25,8 @@ type mmap5000 struct {
 	Elevations [numberOfElevationMaplets][numberOfElevationMaplets]ElevationMaplet
 }
 
-// DatasetReader reads elevation data from a file and returns it as a matrix
-type DatasetReader interface {
+// Reader reads elevation data from a file and returns it as a matrix
+type Reader interface {
 	// ReadFile reads elevation data from a file and returns it as a matrix
 	ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64)
 }
@@ -71,7 +71,7 @@ func toMmapStruct(buf [][]float32) *mmap5000 {
 // loadAsMmap will load the given fname using syscall.mmap
 // The data can be accessed through the returned *mmap5000.
 // The returned *os.File should be syscall.munmapped to release the resource.
-func loadAsMmap(datasetReader DatasetReader, mmapFileDir string, fname string) (*mmap5000, error) {
+func loadAsMmap(datasetReader Reader, mmapFileDir string, fname string) (*mmap5000, error) {
 	mmapFName := mmapFileDir + "/" + path.Base(fname) + ".mmap"
 	fileInfo, err := os.Stat(fname)
 	if err != nil {
@@ -89,7 +89,7 @@ func loadAsMmap(datasetReader DatasetReader, mmapFileDir string, fname string) (
 	return openMmapped(mmapFName)
 }
 
-func writeMmapped(datasetReader DatasetReader, fname string, mmapFname string) error {
+func writeMmapped(datasetReader Reader, fname string, mmapFname string) error {
 	buf, e, n := datasetReader.ReadFile(fname)
 	mmapData := toMmapStruct(buf)
 	mmapData.EastingMin = e

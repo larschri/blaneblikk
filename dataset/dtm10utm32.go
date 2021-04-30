@@ -12,12 +12,14 @@ import (
 	"unsafe"
 )
 
+// DTM10UTM32 has functions to translate between UTM32 easting/northing and lat/lng
 type DTM10UTM32 struct {
 	trans  C.OGRCoordinateTransformationH
 	itrans C.OGRCoordinateTransformationH
 	wkt    string
 }
 
+// DTM10UTM32Dataset has functions to translate between UTM32 easting/northing and lat/lng
 var DTM10UTM32Dataset DTM10UTM32
 
 func init() {
@@ -32,7 +34,7 @@ func init() {
 	DTM10UTM32Dataset.itrans = C.OCTNewCoordinateTransformation(UTM32SpatialReference, LatLngSpatialReference)
 }
 
-// Translate translates lat/lng to easting/northing
+// LatLngToUTM translates lat/lng to easting/northing
 func (dtm *DTM10UTM32) LatLngToUTM(lat float64, lng float64) (easting float64, northing float64) {
 	xs := []float64{lat}
 	ys := []float64{lng}
@@ -41,7 +43,7 @@ func (dtm *DTM10UTM32) LatLngToUTM(lat float64, lng float64) (easting float64, n
 	return xs[0], ys[0]
 }
 
-// ITranslate translates easting/northing to lat/lng
+// UTMToLatLng translates easting/northing to lat/lng
 func (dtm *DTM10UTM32) UTMToLatLng(easting float64, northing float64) (lat float64, lng float64) {
 	xs := []float64{easting}
 	ys := []float64{northing}
@@ -50,6 +52,7 @@ func (dtm *DTM10UTM32) UTMToLatLng(easting float64, northing float64) (lat float
 	return xs[0], ys[0]
 }
 
+// ReadFile reads the given filename and returns the contents
 func (dtm *DTM10UTM32) ReadFile(fname string) (buffer [][]float32, minEasting float64, maxNorthing float64) {
 	log.Printf("reading %s", fname)
 	cStr := C.CString(fname)

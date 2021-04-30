@@ -16,9 +16,9 @@ const (
 	// bottomHeightAngle is the angle between the straight horizontal line and the bottom of the image
 	bottomHeightAngle = -0.06
 
-	// totalHeightAngle is the angle between bottomHeightAngle and the top of the image
-	totalHeightAngle = 0.08
+	// TotalHeightAngle is the angle between bottomHeightAngle and the top of the image
 	TotalHeightAngle = 0.08
+	totalHeightAngle = 0.08
 )
 
 // earthCurvatureDecline contains "elevation penalty" by distance caused by earth curvature. This is an optimisation
@@ -31,11 +31,13 @@ func init() {
 	}
 }
 
+// GeoPixel is the distance and incline. Instances of this type are produced during processing and written into a two-dimensional image.
 type GeoPixel struct {
 	Distance float64
 	Incline  float64
 }
 
+// Transform contains attributes to perform a transformation
 type Transform struct {
 	Easting     float64
 	Northing    float64
@@ -91,9 +93,8 @@ type geoPixelBuilder struct {
 func sign(i float64) dataset.IntStep {
 	if i < 0 {
 		return -1
-	} else {
-		return 1
 	}
+	return 1
 }
 
 // elevationLimit calculates the lowest elevation that would be visible when traversing the next ElevationMap.

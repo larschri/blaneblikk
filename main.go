@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"net"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"

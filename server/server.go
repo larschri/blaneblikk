@@ -9,7 +9,6 @@ import (
 	"math"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
 	"strconv"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/larschri/blaneblikk/render"
 )
 
+// Server is the http server
 type Server struct {
 	ElevationMap dataset.ElevationMap
 	Listener     net.Listener
@@ -129,10 +129,11 @@ func shutdownWhenDone(ctx context.Context, server *http.Server) {
 	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	log.Print("teminating server")
+	log.Print("terminating server")
 	server.Shutdown(c)
 }
 
+// Serve starts a http server and blocks until the given context is cancelled
 func (srv *Server) Serve(ctx context.Context) error {
 	m := http.NewServeMux()
 	m.HandleFunc("/bb/pixelLatLng", srv.handlePixelToLatLng)
