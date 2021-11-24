@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"os"
@@ -18,7 +19,7 @@ func TestMain(m *testing.M) {
 	addr = s.Listener.Addr()
 
 	go func() {
-		if err = s.Serve(); err != nil {
+		if err = s.Serve(context.Background()); err != nil {
 			panic(err)
 		}
 	}()
